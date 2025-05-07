@@ -1,1 +1,70 @@
-README.md
+<div align="center"> 
+<a name="readme-top"></a>
+
+<div style="background:#fff;border-radius: 12px;width:300px;">
+  <img src="https://espai.fun/images/logo.png"/> 
+</div> 
+
+<h1>ESP-AI 开放平台 - Arduino 代码</h1>
+
+硬件接入AI最简单、最低成本的方案<br/>The simplest and lowest cost solution for any item to access AI
+
+</div> 
+
+# 简介
+
+本仓库完全基于 `ESP-AI` 开源库进行实现，旨在为开发者和企业提供快速接入 `ESP-AI` 服务的参考代码。      
+
+开发者仅需开通一套[开放平台分站](https://espai.fun/acout/cooperation/#%E6%88%90%E4%B8%BA%E5%88%86%E9%94%80%E5%95%86%E3%80%81%E4%BB%A3%E7%90%86%E5%95%86)或者使用[`ESP-AI OPEN API`](https://espai.fun/dev/dev-open-api/)来开发自己的应用即可快速推出自己的可商业使用的 `AI` 应用。
+
+
+**总的来说：基于本仓库代码，可以实现各种业务需求。开发者可以删除不需要的功能，或者在固件中写好您的秘钥信息等各种灵活操作...**
+
+
+
+# 功能
+
+1. [x] 已对接好 `ESP-AI`开放平台服务
+2. [x] 支持 `OTA` 升级
+3. [x] 支持 `OLED` 屏幕（0.96寸/0.91寸。 动态小表情）
+4. [x] 支持 `TFT` 屏幕（1.3寸，240 *240，7789驱动。 可根据情绪渲染不同图片） 
+5. [ ] 微信小程序客户端 （很快推出）
+6. [ ] 蓝牙配网（很快推出）
+
+
+# 项目结构
+
+```
+esp-ai-business-arduion/
+├── main/
+│   ├── main.ino                    # 主程序
+│   └── voice.hd                    # 天问代码（天问语音唤醒）
+├── main-img/             
+│   ├── main-img.ino                # 主程序
+│   └── voice.hd                    # 天问代码（天问语音唤醒）
+├── web/              
+│   ├── index.html                  # 配网页面
+│   └── index_xiao_zhi_2.html       # 配网页面（兼容小智硬件）
+└── README.md
+```
+
+# 环境配置
+
+1. 先看一遍文档： 
+[ Arduino IDE 文档](https://espai.fun/guide/client-dev/#%E4%B8%80%E3%80%81arduino-ide-%E7%8E%AF%E5%A2%83)
+
+2. 下载依赖库 `libraries2.zip`，然后解压到 `C:\Users\[用户名]\Documents\Arduino\libraries` (注意 用户名自己改成你电脑用户名，并且删除中括号。)
+ 
+
+# 固件打包
+
+参见文章： [Arduino 导出bin文件并且使用ESP32烧录工具进行烧录（esp32生产环境批量烧录）
+](https://juejin.cn/post/7436363573348696118)
+
+
+# 将固件发布到 ESP-AI 开放平台或者发布到您的分站
+
+该功能正在积极开发中，预计在 2025/6 月份或更早上线，敬请期待~
+
+
+
