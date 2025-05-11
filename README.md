@@ -57,6 +57,35 @@ esp-ai-business-arduion/
 
 
 
+# 彩屏图片更改
+
+打开代码文件 `main-img\main-img.ino` 修改下面代码即可：
+
+```c++
+// 定义一个情感与图片 URL 的映射数组
+EmotionImagePair emotionToImage[] = {
+  // 第一个图一定要放默认图片
+  // 不同的表情可以使用同一张图片
+  { "默认", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/default.jpg" },
+  { "快乐", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kuai-le.jpg" },
+  { "意外", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kuai-le.jpg" },
+  { "愤怒", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/shen-qi.jpg" },
+  { "恐惧", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kong-ju.jpg" },
+  { "敬畏", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kong-ju.jpg" },
+  { "专注", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/si-kao.jpg" },
+  { "疑问", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/si-kao.jpg" },
+  { "伤心", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/ku-qi.jpg" },
+  { "懊恼", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/ku-qi.jpg" }
+};
+```
+
+**注意：**  
+1. 图片必须使用 `http`, 不要使用 `https`。
+2. 图片尺寸必须为 `240 * 240`像素
+3. 图片大小必须在 `10kb` 以内
+ 
+
+
 # 1.54 寸 TFT 屏幕接线（8pin）
  
 | ESP-AI(v2/mini) | TFT |
