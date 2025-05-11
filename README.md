@@ -37,10 +37,10 @@
 ```
 esp-ai-business-arduion/
 ├── main/
-│   ├── main.ino                    # 主程序
+│   ├── main.ino                    # 主程序-开放平台版本
 │   └── voice.hd                    # 天问代码（天问语音唤醒）
 ├── main-img/             
-│   ├── main-img.ino                # 主程序
+│   ├── main-img.ino                # 主程序-TFT图片版
 │   └── voice.hd                    # 天问代码（天问语音唤醒）
 ├── web/              
 │   ├── index.html                  # 配网页面
@@ -54,7 +54,42 @@ esp-ai-business-arduion/
 [ Arduino IDE 文档](https://espai.fun/guide/client-dev/#%E4%B8%80%E3%80%81arduino-ide-%E7%8E%AF%E5%A2%83)
 
 2. 下载依赖库 `libraries2.zip`，然后解压到 `C:\Users\[用户名]\Documents\Arduino\libraries` (注意 用户名自己改成你电脑用户名，并且删除中括号。)
+
+
+
+# 1.54 寸 TFT 屏幕接线（8pin）
  
+| ESP-AI(v2/mini) | TFT |
+| --------------- | --- |
+| 3.3v            | vcc |
+| GND             | GND |
+| 1               | SCK |
+| 2               | SDA |
+| 48              | CS  |
+| 47              | DC  |
+| 45              | RST |
+| 13              | BL  |
+
+ 
+
+# 1.3 寸 TFT 屏幕接线（7pin）
+
+需要自行打开 `libraries\TFT_eSPI\User_Setup.h` 将下面的两行代码注释。
+``` c++
+// #define TFT_RST   45  // Reset pin (could connect to NodeMCU RST, see next line)
+// #define TFT_BL    13  // LED back-light (only for ST7789 with backlight control pin)
+```
+
+| ESP-AI(v2/mini) | TFT |
+| --------------- | --- |
+| 3.3v            | vcc |
+| GND             | GND |
+| 1               | SCK |
+| 2               | SDA |
+| 48              | CS  |
+| 47              | DC  | 
+
+
 
 # 固件打包
 
