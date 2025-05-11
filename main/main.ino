@@ -2705,10 +2705,7 @@ void setup() {
 
   // 连接业务服务器
   webScoket_yw_main();
-
-
-
-  // update_ota("http://101.34.59.36:7002/public/ota/test/1.bin");
+ 
 }
 
 

@@ -1,5 +1,5 @@
-// ================= S3 开发板选择 ==================== 
-#define IS_ESP_AI_S3  
+// ================= S3 开发板选择 ====================
+#define IS_ESP_AI_S3
 // ====================================================
 
 #include <esp-ai.h>
@@ -8,17 +8,29 @@
 #include <esp_adc_cal.h>
 #include <driver/adc.h>
 
-// 这个插件是需要特殊修改的
-// #include "Face.h"
-
 #include <TJpg_Decoder.h>  // JPEG decoder library
 #include "SPI.h"
 #include <TFT_eSPI.h>  // Hardware-specific library for TFT display
 #include "U8g2_for_TFT_eSPI.h"
 
+
+#include <map>
+#include "esp_heap_caps.h"
+
+// 图片缓存结构体
+struct ImageCache {
+  uint8_t *buffer;
+  int len;
+};
+
+std::map<String, ImageCache> imageCacheMap;
+std::vector<String> imageCacheOrder;
+const size_t MAX_CACHE_IMAGES = 10;  // 最大缓存的图片数量，超过后自动清除旧数据
+
+
 // Declare TFT object
 TFT_eSPI tft = TFT_eSPI();
-TFT_eSprite sprite = TFT_eSprite(&tft);
+TFT_eSprite sprite = TFT_eSprite(&tft); 
 U8g2_for_TFT_eSPI *u8g2;
 
 // ====================================================
@@ -30,35 +42,6 @@ String _bin_id = "500";
 // Face *face;
 esp_adc_cal_characteristics_t *adc_chars = NULL;
 
-
-
-/*** 测试地址 ***/
-// 业务服务地址，用于将设备信息传递到用户页面上
-// String domain = "http://192.168.3.16:7002/";
-// // 业务服务 ws 服务端口ip
-// String yw_ws_ip = "192.168.3.16";
-// String yw_ws_path = "";
-// int yw_ws_port = 7002;
-// // ESP-AI 服务配置： { 服务IP， 服务端口, "[可选] 请求参数" }
-// ESP_AI_server_config server_config = { "http", "192.168.3.16", 8088 };
-
-// /*** 线上地址 ***/
-// String domain = "https://api.espai.fun/";
-// String yw_ws_ip = "api.espai.fun";
-// String yw_ws_path = "";
-// int yw_ws_port = 443;
-// // 这里不配置接口，配网页面也没有 api_key 配置，这会导致使用默认的服务节点：node.espai.fun
-// ESP_AI_server_config server_config = { "https", "node.espai.fun", 443 };
-
-// /*** 线上地址 ***/
-// String domain = "https://api.espai2.fun/";
-// String yw_ws_ip = "api.espai2.fun";
-// String yw_ws_path = "";
-// int yw_ws_port = 443;
-// // 这里不配置接口，配网页面也没有 api_key 配置，这会导致使用默认的服务节点：node.espai.fun
-// ESP_AI_server_config server_config = { "https", "node.espai2.fun", 443 };
-
-
 /*** 线上地址 http ***/
 String domain = "http://api.espai.fun/";
 String yw_ws_ip = "api.espai.fun";
@@ -66,6 +49,27 @@ String yw_ws_path = "";
 int yw_ws_port = 80;
 // 这里不配置接口，配网页面也没有 api_key 配置，这会导致使用默认的服务节点：node.espai.fun
 ESP_AI_server_config server_config = { "http", "node.espai.fun", 80 };
+
+struct EmotionImagePair {
+  String emotion;
+  String imageURL;
+};
+
+// 定义一个情感与图片 URL 的映射数组
+EmotionImagePair emotionToImage[] = {
+  // 第一个图一定要放默认图片
+  { "默认", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/default.jpg" },
+  { "快乐", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kuai-le.jpg" },
+  { "意外", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kuai-le.jpg" },
+  { "愤怒", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/shen-qi.jpg" },
+  { "恐惧", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kong-ju.jpg" },
+  { "敬畏", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kong-ju.jpg" },
+  { "专注", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/si-kao.jpg" },
+  { "疑问", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/si-kao.jpg" },
+  { "伤心", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/ku-qi.jpg" },
+  { "懊恼", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/ku-qi.jpg" }
+};
+
 
 
 // ====================================================================================
@@ -102,6 +106,10 @@ long prve_emotion_time = 0;
 String bttomText;
 // 上一次移动的坐标
 int bttomTextPrevLeft;
+
+// 顶部状态图标
+String topLeftText;
+String prevTopLeftText;
 
 /**
  * 电量，电压检测
@@ -469,10 +477,10 @@ void onError(String code, String at_pos, String message) {
 // ========================= 指令监听 =========================
 void on_command(String command_id, String data) {
 
-  // 爱小明后出现一张图片
-  if (command_id == "love_ming") {
-    renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/da-xiao-240.jpg");
-  }
+  // // 爱小明后出现一张图片
+  // if (command_id == "love_ming") {
+  //   renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/da-xiao-240.jpg");
+  // }
 
 
   if (command_id == "add_volume") {
@@ -504,25 +512,27 @@ void on_session_status(String status) {
   // Serial.println("会话状态===: " + status);
   _session_status = status;
 
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-  // 处理会话状态
+ // 处理会话状态
   if (status == "iat_start") {
     // face->Behavior.Clear();
     // face->Behavior.SetEmotion(eEmotions::Squint, 1.0);
     // face->DrawStrLeftTop("聆听中", 2);
+    topLeftText = "聆听中";
   } else if (status == "iat_end") {
     // face->Behavior.Clear();
     // face->Behavior.SetEmotion(eEmotions::Happy, 1.0);
     // face->Behavior.SetEmotion(eEmotions::Surprised, 1.0);
     // face->DrawStrLeftTop("AI说话中", 2);
+    topLeftText = "AI说话中";
   } else if (status == "tts_real_end") {
     // face->Behavior.Clear();
     // face->Behavior.SetEmotion(eEmotions::Normal, 1.0);
     // face->DrawStrLeftTop("待命中", 2);
+    topLeftText = "待命中";
+    renderImageFromURL(emotionToImage[0].imageURL.c_str(), false);
   } else if (status == "tts_chunk_start") {
   } else {
   }
-#endif
 }
 
 // ========================= 网络状态监听 =========================
@@ -711,11 +721,6 @@ String on_bind_device(JSONVar data) {
   Serial.println("[Info] device_id: " + device_id);
   // Serial.println("[Info] loc_api_key: " + loc_api_key);
 
-  // 如果已经连接了wifi了的话，这个应该为修改  --这个情况废弃
-  // String url = domain + "devices/add";
-  // if (loc_ext7 != "") {
-  //   url = domain + "devices/updateByHardware";
-  // }
   String url = domain + "devices/add";
 
 
@@ -855,7 +860,6 @@ void on_position(String ip, String nation, String province, String city, String 
 
 void on_connected_wifi(String device_ip) {
   _device_ip = device_ip;
-  // xTaskCreate(on_connected_wifi_http_task, "on_connected_wifi_http_task", 4096, NULL, 1, NULL);
 }
 
 
@@ -1704,51 +1708,18 @@ const char html_str[] PROGMEM = R"rawliteral(
 </script>
 )rawliteral";
 #endif
- 
+
 // 情绪检测
 void onEmotion(String _emotion) {
   emotion = _emotion;
   // Serial.print("情绪： ");
   // Serial.println(emotion);
 }
-// void emotionTask(void *arg) {
-//   while (true) {
-//     // 情绪灯光
-//     if (prve_emotion != emotion) {
-
-//       if (emotion == "无情绪") {
-//         if ((millis() - prve_emotion_time) > 6000) {
-//           renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/ym2-240.jpg");
-//         }
-//       } else {
-//         // 避免重复渲染表情
-//         if ((millis() - prve_emotion_time) > 2000) {
-//           prve_emotion_time = millis();
-//           prve_emotion = emotion;
-//           // 无情绪、快乐、伤心、愤怒、意外、专注、发愁、懊恼、困倦、疑问、恐惧、敬畏
-//           if (emotion == "快乐" || emotion == "意外") {
-//             Serial.println("快乐");
-//             renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/da-xiao-240.jpg");
-//           } else if (emotion == "伤心" || emotion == "愤怒") {
-//             Serial.println("伤心");
-//             renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/sheng-qi-240.jpg");
-//           } else if (emotion == "恐惧" || emotion == "敬畏") {
-//             Serial.println("恐惧");
-//             renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/kong-ju-240.jpg");
-//           }
-//         }
-//       }
-//     }
-
-//     vTaskDelay(300 / portTICK_PERIOD_MS);
-//   }
-
-//   vTaskDelete(NULL);
-// }
 
 void setup() {
   Serial.begin(115200);
   delay(500);
+
 
   // 配置 ADC 宽度和通道
   adc1_config_width(ADC_WIDTH_BIT_12);
@@ -1770,7 +1741,6 @@ void setup() {
 
 
 
-
   String ext4 = esp_ai.getLocalData("ext4");
   String ext5 = esp_ai.getLocalData("ext5");
   String ext6 = esp_ai.getLocalData("ext6");
@@ -1788,10 +1758,6 @@ void setup() {
   String speaker_data = esp_ai.getLocalData("speaker_data");
   String lights_data = esp_ai.getLocalData("lights_data");
   kwh_enable = esp_ai.getLocalData("kwh_enable");
-  // String _emotion_led_number = esp_ai.getLocalData("emotion_led_number");
-  // if (_emotion_led_number != "") {
-  //   emotion_led_number = _emotion_led_number.toInt();
-  // }
 
   if (kwh_enable == "") {
     kwh_enable = "1";
@@ -1914,26 +1880,29 @@ void setup() {
   // 情绪灯光任务
   // xTaskCreate(emotionTask, "emotionTask", 1024 * 30, NULL, 1, NULL);
 
+  // 渲染文字的任务
+  // xTaskCreate(drawStrAniFn, "TaskFunction_t", 1024 * 4, NULL, 1, NULL);
+
   // 连接业务服务器
   webScoket_yw_main();
 
-
-
-
   // Initialize TFT screen
-  tft.begin();
-  tft.setTextColor(0xFFFF, 0x0000);  // Set text color to white on black background
-  tft.fillScreen(TFT_BLACK);         // Fill screen with black
+  tft.begin(); 
+  tft.setTextColor(0xFFFF, TFT_TRANSPARENT);  // 透明背景
+  tft.fillScreen(TFT_BLACK);                  // Fill screen with black
   int width_ = tft.width();
   int height_ = tft.height();
-  Serial.println("屏幕宽高: ");
-  Serial.println(width_);
-  Serial.println(height_);
-  sprite.createSprite(width_, height_);  // 创建双缓冲区
-  u8g2 = new U8g2_for_TFT_eSPI();        // create u8g2 procedures
-  u8g2->begin(sprite);                   // connect u8g2 procedures to TFT_eSPI
-  u8g2->setBackgroundColor(0x0005);      // 黑色
+  // Serial.println("屏幕宽高: ");
+  // Serial.println(width_);
+  // Serial.println(height_);
+  sprite.createSprite(width_, height_);   
+  u8g2 = new U8g2_for_TFT_eSPI();           // create u8g2 procedures
+  u8g2->begin(sprite);                      // connect u8g2 procedures to TFT_eSPI
+  // u8g2->setBackgroundColor(0x0000);         // 黑色 
+  u8g2->setFont(u8g2_font_wqy12_t_gb2312);  // select u8g2 font from here: https://github.com/olikraus/u8g2/wiki/fntlistall  
+  u8g2->setDrawColor(0x6D9A);  // 白色
 
+  // sprite2
 
   // Set up the JPEG decoder with the callback function
   TJpgDec.setCallback(tft_output);
@@ -1942,10 +1911,16 @@ void setup() {
   // The byte order can be swapped (set true for TFT_eSPI)
   TJpgDec.setSwapBytes(true);
 
-  // 低于 8Kb 的话很容易卡死
-  // xTaskCreate(faceTask, "faceTask", 1024 * 12, NULL, 1, NULL); 
-  renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/ym2-240.jpg");
- 
+
+  // 遍历并打印所有情感与图片的映射
+  for (int i = 0; i < sizeof(emotionToImage) / sizeof(emotionToImage[0]); i++) {
+    // Serial.print("缓存图片: ");
+    // Serial.println(emotionToImage[i].imageURL);
+    renderImageFromURL(emotionToImage[i].imageURL.c_str(), true);
+  }
+
+  // 显示默认图片
+  renderImageFromURL(emotionToImage[0].imageURL.c_str(), false);
 }
 
 
@@ -1953,12 +1928,12 @@ void setup() {
 long last_log_time = 0;
 void loop() {
   // test...
-  if (millis() - last_log_time > 5000) {
-    last_log_time = millis();
-    Serial.print("===> 可用内存: ");
-    Serial.print(ESP.getFreeHeap() / 1024);
-    Serial.println("KB");
-  }
+  // if (millis() - last_log_time > 5000) {
+  //   last_log_time = millis();
+  //   Serial.print("===> 可用内存: ");
+  //   Serial.print(ESP.getFreeHeap() / 1024);
+  //   Serial.println("KB");
+  // }
 
 
   if (start_update_ed == false) {
@@ -2018,30 +1993,30 @@ void loop() {
 
     if (emotion == "无情绪") {
       if ((millis() - prve_emotion_time) > 6000) {
-        renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/ym2-240.jpg");
+        prve_emotion_time = millis();
+        prve_emotion = emotion;
+        renderImageFromURL(emotionToImage[0].imageURL.c_str(), false);
       }
     } else {
       // 避免重复渲染表情
-      if ((millis() - prve_emotion_time) > 2000) {
+      if ((millis() - prve_emotion_time) > 3000) {
         prve_emotion_time = millis();
         prve_emotion = emotion;
-        // 无情绪、快乐、伤心、愤怒、意外、专注、发愁、懊恼、困倦、疑问、恐惧、敬畏
-        if (emotion == "快乐" || emotion == "意外") {
-          Serial.println("快乐");
-          renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/da-xiao-240.jpg");
-        } else if (emotion == "伤心" || emotion == "愤怒") {
-          Serial.println("伤心");
-          renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/sheng-qi-240.jpg");
-        } else if (emotion == "恐惧" || emotion == "敬畏") {
-          Serial.println("恐惧");
-          renderImageFromURL("http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/yang_mi/kong-ju-240.jpg");
+
+        // 遍历映射数组，查找情绪对应的图片 URL
+        for (int i = 0; i < sizeof(emotionToImage) / sizeof(emotionToImage[0]); i++) {
+          if (String(emotionToImage[i].emotion) == emotion) {
+            renderImageFromURL(emotionToImage[i].imageURL.c_str(), false);
+            break;
+          }
         }
       }
     }
   }
- 
+
   // 文字渲染
   drawStrAniFn();
+  drawStrTL();
 }
 
 
@@ -2057,71 +2032,129 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t *bitmap) 
   // Return 1 to decode the next block
   return 1;
 }
-// Function to download and render image from HTTP URL
-void renderImageFromURL(const char *image_url) {
-  // Fetch JPEG image from the HTTP URL
+
+
+void cacheImageToPSRAM(const String &url, uint8_t *buffer, int len) {
+  // 如果已存在，先释放旧缓存
+  if (imageCacheMap.count(url)) {
+    free(imageCacheMap[url].buffer);
+    imageCacheMap.erase(url);
+    imageCacheOrder.erase(std::remove(imageCacheOrder.begin(), imageCacheOrder.end(), url), imageCacheOrder.end());
+  }
+
+  // 超过最大缓存数，释放最旧的缓存
+  if (imageCacheOrder.size() >= MAX_CACHE_IMAGES) {
+    String oldest = imageCacheOrder.front();
+    imageCacheOrder.erase(imageCacheOrder.begin());
+    if (imageCacheMap.count(oldest)) {
+      free(imageCacheMap[oldest].buffer);
+      imageCacheMap.erase(oldest);
+    }
+  }
+
+  // 加入新缓存
+  ImageCache img = { buffer, len };
+  imageCacheMap[url] = img;
+  imageCacheOrder.push_back(url);
+}
+
+
+// @param image_url   图片地址，建议 http
+// @param only_cache  仅仅只是做缓存
+void renderImageFromURL(const char *image_url, bool only_cache) {
+
+  int width_ = tft.width();
+  int height_ = tft.height();
+  tft.fillRect(0, 0, width_, height_, TFT_BLACK);  // 清屏背景
+  String url = String(image_url);
+
+  // 缓存命中
+  if (imageCacheMap.count(url)) {
+    if (only_cache) {
+      return;
+    }
+    ImageCache &img = imageCacheMap[url];
+    uint16_t w = 0, h = 0;
+    TJpgDec.getJpgSize(&w, &h, img.buffer, img.len);
+    TJpgDec.drawJpg(0, 0, img.buffer, img.len);
+    return;
+  }
+
+  // 网络请求
   HTTPClient http;
-  http.begin(image_url);      // Initialize HTTP client with the image URL
-  int httpCode = http.GET();  // Make the GET request
+  http.begin(image_url);
+  int httpCode = http.GET();
 
   if (httpCode == HTTP_CODE_OK) {
-    // Get the length of the image data
     int len = http.getSize();
-    // Serial.print("Image size: ");
-    // Serial.println(len);
 
-    // Create a buffer to hold the image data
-    uint8_t *buffer = (uint8_t *)malloc(len);
-    if (buffer == NULL) {
-      Serial.println("Buffer allocation failed!");
+    // 分配 PSRAM 缓冲区
+    uint8_t *buffer = (uint8_t *)heap_caps_malloc(len, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (!buffer) {
+      Serial.println("PSRAM 分配失败！");
+      http.end();
       return;
     }
 
-    // Get the HTTP response stream and copy to the buffer
     WiFiClient *stream = http.getStreamPtr();
     int bytesRead = 0;
-    while (stream->available()) {
+    while (stream->available() && bytesRead < len) {
       buffer[bytesRead++] = stream->read();
     }
 
-    // Get image width and height
-    uint16_t w = 0, h = 0;
-    TJpgDec.getJpgSize(&w, &h, buffer, len);
-    // Serial.print("Width = ");
-    // Serial.print(w);
-    // Serial.print(", Height = ");
-    // Serial.println(h);
+    // 缓存
+    cacheImageToPSRAM(url, buffer, len);
 
-    // Draw the JPEG image on the TFT display
-    TJpgDec.drawJpg(0, 0, buffer, len);
-
-    // Free allocated buffer
-    free(buffer);
+    if (only_cache == false) {
+      // 渲染
+      uint16_t w = 0, h = 0;
+      TJpgDec.getJpgSize(&w, &h, buffer, len);
+      TJpgDec.drawJpg(0, 0, buffer, len);
+      // 不释放 buffer，缓存保留
+    }
   } else {
-    Serial.printf("HTTP GET failed with code %d\n", httpCode);
+    Serial.printf("HTTP GET 失败：%d\n", httpCode);
   }
 
-  // End the HTTP request
   http.end();
 }
 
 
+
+// 渲染底部文字
+int fontHeight = 30;
+int spriteWidth = 0;
 void drawStrAniFn() {
+  if (spriteWidth == 0) {
+    spriteWidth = tft.width();
+  }
   if (bttomText != "") {
-    if (bttomTextPrevLeft > -3000) {            // 太大就没必要再播放了
-      u8g2->setFont(u8g2_font_wqy12_t_gb2312);  // select u8g2 font from here: https://github.com/olikraus/u8g2/wiki/fntlistall
-      u8g2->setDrawColor(0xFFFF);               // 白色
-      sprite.fillSprite(0x0005);
+    // int scrollSpeed = map(bttomText.length(), 0, 50, 10, 3);  // 自动调节速度
+    if (bttomTextPrevLeft > -3000) {  // 太大就没必要再播放了
+      sprite.fillSprite(0x0000);
       // 一开始不滚动，等一会在滚动
       if (bttomTextPrevLeft < -80) {
-        u8g2->setCursor(bttomTextPrevLeft + 50, 25);  // start writing at this position
+        u8g2->setCursor(bttomTextPrevLeft + 50, fontHeight - 5);  // start writing at this position
       } else {
-        u8g2->setCursor(0, 25);  // start writing at this position
+        u8g2->setCursor(0, fontHeight - 5);  // start writing at this position
       }
       u8g2->print(bttomText.c_str());
-      sprite.pushSprite(0, 210);
-
+      sprite.pushSprite(0, 210);   
       bttomTextPrevLeft -= 15;
+    }
+  }
+}
+
+
+// 渲染左上角文字
+void drawStrTL() {
+  if (topLeftText != "") {
+    if (prevTopLeftText != topLeftText) {
+      prevTopLeftText = topLeftText;
+      sprite.fillSprite(0x0000);
+      u8g2->setCursor(0, 30);  // start writing at this position
+      u8g2->print(topLeftText.c_str());  
+      sprite.pushSprite(0, 0, 0, 0, 100, 50);  
     }
   }
 }
