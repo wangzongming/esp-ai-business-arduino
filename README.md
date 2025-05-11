@@ -88,7 +88,7 @@ EmotionImagePair emotionToImage[] = {
 
 # 1.54 寸 TFT 屏幕接线（8pin）
  
-| ESP-AI(v2/mini) | TFT |
+| ESP-AI(v1/v2/mini) | TFT |
 | --------------- | --- |
 | 3.3v            | vcc |
 | GND             | GND |
@@ -109,7 +109,7 @@ EmotionImagePair emotionToImage[] = {
 // #define TFT_BL    13  // LED back-light (only for ST7789 with backlight control pin)
 ```
 
-| ESP-AI(v2/mini) | TFT |
+| ESP-AI(v1/v2/mini) | TFT |
 | --------------- | --- |
 | 3.3v            | vcc |
 | GND             | GND |
