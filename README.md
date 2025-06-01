@@ -27,7 +27,7 @@
 1. [x] 已对接好 `ESP-AI`开放平台服务
 2. [x] 支持 `OTA` 升级
 3. [x] 支持 `OLED` 屏幕（0.96寸/0.91寸。 动态小表情）
-4. [x] 支持 `TFT` 屏幕（1.3寸，240 *240，7789驱动。 可根据情绪渲染不同图片） 
+4. [x] 支持 `TFT` 屏幕（1.3寸，240 *240，7789驱动。 可渲染图片/表情） 
 5. [ ] 微信小程序客户端 （很快推出）
 6. [ ] 蓝牙配网（很快推出）
 
@@ -86,7 +86,7 @@ EmotionImagePair emotionToImage[] = {
  
 
 
-# 1.54 寸 TFT 屏幕接线（8pin）
+# 1.54 寸 TFT 屏幕接线（8pin）-- main-img 目录中的接线
  
 | ESP-AI(v1/v2/mini) | TFT |
 | --------------- | --- |
@@ -100,6 +100,10 @@ EmotionImagePair emotionToImage[] = {
 | 13              | BL  |
 
  
+# 1.54 寸 TFT 屏幕接线（8pin）-- main 目录中的接线
+
+见 https://espai.fun/guide/1e7b8i8e/
+
 
 # 1.3 寸 TFT 屏幕接线（7pin）
 
