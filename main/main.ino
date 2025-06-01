@@ -7,7 +7,7 @@
 #include <Arduino.h>
 
 // ==================版本定义=========================
-String _version = "1.27.36";
+String _version = "1.27.37";
 
 // ==================OTA 升级定义=========================
 // 是否为官方固件， 如果是您自己的固件请改为 "0"
@@ -946,6 +946,8 @@ void setup()
         kwh_enable = "1";
     }
 
+    ESP_AI_volume_config volume_config = {volume_pin.toInt(), 4096, 1, volume_enable == "0" ? false : true};
+    ESP_AI_lights_config lights_config = {18}; // esp32s3 开发板是 48
     ESP_AI_reset_btn_config reset_btn_config = {};
 // 小智AI 引脚不一样
 #if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT)
@@ -959,6 +961,9 @@ void setup()
     kwh_enable = "0";
     // 按钮冲突，随便设置一个
     reset_btn_config.pin = 46;
+    // 音量旋钮冲突，随便设置一个
+    volume_config.input_pin = 3;
+    volume_config.enable = false;
 #endif
     // LOG_D("lights_data: ");
     // LOG_D(lights_data);
@@ -1021,10 +1026,6 @@ void setup()
         strcpy(wake_up_config.wake_up_scheme, "asrpro"); // 唤醒方案
         strcpy(wake_up_config.str, "start");             // 串口和天问asrpro 唤醒时需要配置的字符串，也就是从另一个开发版发送来的字符串
     }
-
-    ESP_AI_volume_config volume_config = {volume_pin.toInt(), 4096, 1, volume_enable == "0" ? false : true};
-
-    ESP_AI_lights_config lights_config = {18}; // esp32s3 开发板是 48
 
 #if defined(IS_AI_VOX_TFT)
     lights_data = "41";

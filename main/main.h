@@ -12,9 +12,9 @@
 // #define IS_ESP_AI_S3_DOUBLE_OLED         // ESP-AI S3 开发板（双OLED 屏）
 // #define IS_ESP_AI_S3_TFT          // ESP-AI S3 开发板（TFT 屏）
 // #define IS_AI_VOX_TFT  // AI_VOX S3 开发板（TFT 屏）
-#define IS_WU_MING_TFT // 无名科技 S3 开发板（TFT 屏）
+// #define IS_WU_MING_TFT // 无名科技 S3 开发板（TFT 屏）
 // #define IS_XIAO_ZHI_S3_2 // 小智AI S3 二代长条屏开发板
-// #define IS_XIAO_ZHI_S3_3  // 小智AI S3 三代方平屏开发板
+#define IS_XIAO_ZHI_S3_3  // 小智AI S3 三代方平屏开发板
 // ====================================================
 
 #define EMOTION_LIGHT_PIN 46 // 情绪灯光控制引脚
