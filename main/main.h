@@ -11,7 +11,8 @@
 // #define IS_ESP_AI_S3_OLED         // ESP-AI S3 开发板（OLED 屏）
 // #define IS_ESP_AI_S3_DOUBLE_OLED         // ESP-AI S3 开发板（双OLED 屏）
 // #define IS_ESP_AI_S3_TFT          // ESP-AI S3 开发板（TFT 屏）
-#define IS_AI_VOX_TFT             // AI_VOX S3 开发板（TFT 屏）
+// #define IS_AI_VOX_TFT  // AI_VOX S3 开发板（TFT 屏）
+#define IS_WU_MING_TFT // 无名科技 S3 开发板（TFT 屏）
 // #define IS_XIAO_ZHI_S3_2 // 小智AI S3 二代长条屏开发板
 // #define IS_XIAO_ZHI_S3_3  // 小智AI S3 三代方平屏开发板
 // ====================================================
@@ -35,7 +36,7 @@
 
 // ===========================================================
 // [可 填] 自定义配网页面
-#if defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_ESP_AI_S3_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_ESP_AI_S3_NO_SCREEN)
+#if defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_ESP_AI_S3_TFT) || defined(IS_ESP_AI_S3_NO_SCREEN)
 const char html_str[] PROGMEM = R"rawliteral( 
 <!DOCTYPE html>
 <html lang='en'>
@@ -290,8 +291,7 @@ const char html_str[] PROGMEM = R"rawliteral(
                     <label class='label' style='width:  70px'><span style='color:red;'>*</span>唤醒方式</label>
                     <select id='wakeup-type' name='wakeup-type' placeholder='请选择唤醒/对话方式' value=''
                         style='width:  calc(100% - 80px)'>
-                        <option value='asrpro' id='asrpro'>天问唤醒</option>
-                        <option value='edge_impulse' id='edge_impulse'>内置语音唤醒（优化中）</option>
+                        <option value='asrpro' id='asrpro'>天问唤醒</option> 
                         <option value='pin_high' id='pin_high'>按钮高电平唤醒(三角按钮)</option>
                         <option value='pin_low' id='pin_low'>按钮低电平唤醒(三角按钮)</option>
                         <option value='boot' id='boot'>BOOT按钮唤醒</option>
@@ -436,26 +436,7 @@ const char html_str[] PROGMEM = R"rawliteral(
                 <div class='desc'>屏幕正极一定要使用 3.3v 哦 </div>
             </div>
         </div>
-
-        <div class='block'>
-            <div id='title'>
-                静默时间配置(毫秒)
-                <span style='float: right;font-size: 12px;font-weight: 500;'>高级配置 [选填]</span>
-            </div>
-            <div class='inputs-container'>
-                <div class='input_wrap' id='vad_first_wrap'>
-                    <label class='label'>首次静默时间</label>
-                    <input id='vad_first' name='vad_first' placeholder='建议 8000 (也就是8秒)' value='8000' type='number'
-                        class='input'>
-                </div>
-                <div class='input_wrap' id='vad_course_wrap'>
-                    <label class='label'>说话后静默时间</label>
-                    <input id='vad_course' name='vad_course' placeholder='建议 1300 (也就是1.3秒)' value='1300' type='number'
-                        class='input'>
-                </div>
-                <div class='desc'> ps: 按住对话方式设置静默时间无意义 </div>
-            </div>
-        </div>
+ 
 
 
         <div class='block'>
@@ -623,13 +604,7 @@ const char html_str[] PROGMEM = R"rawliteral(
                     
                     if (data.volume_pin) {
                         document.querySelector('#volume_pin').value = data.volume_pin;
-                    }
-                    if (data.vad_first) {
-                        document.querySelector('#vad_first').value = data.vad_first;
-                    }
-                    if (data.vad_course) {
-                        document.querySelector('#vad_course').value = data.vad_course;
-                    }
+                    } 
                     if (data.mic_bck) {
                         document.querySelector('#mic_bck').value = data.mic_bck;
                     }
@@ -715,9 +690,7 @@ const char html_str[] PROGMEM = R"rawliteral(
             var ext8 = document.querySelector('#ext8').value;
             var kwh_enable = document.querySelector('#kwh_enable').checked;
             var volume_enable = document.querySelector('#volume_enable').checked; 
-            var volume_pin = document.querySelector('#volume_pin').value;
-            var vad_first = document.querySelector('#vad_first').value;
-            var vad_course = document.querySelector('#vad_course').value;
+            var volume_pin = document.querySelector('#volume_pin').value; 
             var mic_bck = document.querySelector('#mic_bck').value;
             var mic_ws = document.querySelector('#mic_ws').value;
             var mic_data = document.querySelector('#mic_data').value;
@@ -777,9 +750,7 @@ const char html_str[] PROGMEM = R"rawliteral(
                 diyServerParams: ext8, 
                 kwh_enable: kwh_enable ? '1' : '0',
                 volume_enable: volume_enable ? '1' : '0',
-                volume_pin: volume_pin,
-                vad_first: vad_first,
-                vad_course: vad_course,
+                volume_pin: volume_pin, 
                 mic_bck: mic_bck,
                 mic_ws: mic_ws,
                 mic_data: mic_data,
@@ -879,7 +850,7 @@ const char html_str[] PROGMEM = R"rawliteral(
 )rawliteral";
 #endif
 
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT)
 #define VOL_ADD_KEY 40
 #define VOL_SUB_KEY 39
 const char html_str[] PROGMEM = R"rawliteral( 
@@ -1137,8 +1108,7 @@ const char html_str[] PROGMEM = R"rawliteral(
                     <select id='wakeup-type' name='wakeup-type' placeholder='请选择唤醒/对话方式' value='boot'
                         style='width:  calc(100% - 80px)'>
                         <option value='boot' id='boot'>BOOT按钮唤醒（唤醒按钮）</option>
-                        <option value='asrpro' id='asrpro'>天问唤醒</option>
-                        <option value='edge_impulse' id='edge_impulse'>内置语音唤醒（优化中）</option>
+                        <option value='asrpro' id='asrpro'>天问唤醒</option> 
                         <option value='boot_listen' id='boot_listen'>按住对话(BOOT按钮)</option> 
                     </select>
                 </div>
@@ -1190,27 +1160,7 @@ const char html_str[] PROGMEM = R"rawliteral(
 
         </div>
  
- 
-        <div class='block'>
-            <div id='title'>
-                静默时间配置(毫秒)
-                <span style='float: right;font-size: 12px;font-weight: 500;'>高级配置 [选填]</span>
-            </div>
-            <div class='inputs-container'>
-                <div class='input_wrap' id='vad_first_wrap'>
-                    <label class='label'>首次静默时间</label>
-                    <input id='vad_first' name='vad_first' placeholder='建议 5000 (也就是5秒)' value='5000' type='number'
-                        class='input'>
-                </div>
-                <div class='input_wrap' id='vad_course_wrap'>
-                    <label class='label'>说话后静默时间</label>
-                    <input id='vad_course' name='vad_course' placeholder='建议 500 (也就是0.5秒)' value='500' type='number'
-                        class='input'>
-                </div>
-                <div class='desc'> ps: 按住对话方式设置静默时间无意义 </div>
-            </div>
-        </div>
- 
+  
 
         <div
             style='width: 100%;text-align: right; padding: 12px;box-sizing: border-box;border-top: 1px solid aliceblue;position: absolute;bottom: 0px;left: 0px;right: 0px;background-color: #fff;box-shadow: 0px 0px 8px #ccc;'>
@@ -1317,13 +1267,7 @@ const char html_str[] PROGMEM = R"rawliteral(
                     if (data.diyServerParams) {
                         document.querySelector('#ext8').value = data.diyServerParams;
                     }
- 
-                    if (data.vad_first) {
-                        document.querySelector('#vad_first').value = data.vad_first;
-                    }
-                    if (data.vad_course) {
-                        document.querySelector('#vad_course').value = data.vad_course;
-                    } 
+  
                 } else {
                     msg('请刷新页面重试');
                 }
@@ -1375,9 +1319,7 @@ const char html_str[] PROGMEM = R"rawliteral(
             var ext4 = document.querySelector('#ext4').value || '';
             var ext5 = document.querySelector('#ext5').value || '';
             var ext6 = document.querySelector('#ext6').value;
-            var ext8 = document.querySelector('#ext8').value; 
-            var vad_first = document.querySelector('#vad_first').value;
-            var vad_course = document.querySelector('#vad_course').value;  
+            var ext8 = document.querySelector('#ext8').value;  
             var mic_bck = "5";
             var mic_ws = "4";
             var mic_data = "6";
@@ -1435,9 +1377,7 @@ const char html_str[] PROGMEM = R"rawliteral(
                 ext5: ext5,
                 ext6: ext6,
                 ext7: wakeupType,
-                diyServerParams: ext8,   
-                vad_first: vad_first,
-                vad_course: vad_course,
+                diyServerParams: ext8,    
                 mic_bck: mic_bck,
                 mic_ws: mic_ws,
                 mic_data: mic_data,

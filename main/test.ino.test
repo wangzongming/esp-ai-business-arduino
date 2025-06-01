@@ -25,7 +25,7 @@ Face *face;
 
 // 定时器对象
 SimpleTimer timer;
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3)
 // 按钮对象
 OneButton button_vol_add(VOL_ADD_KEY, true);
 OneButton button_vol_sub(VOL_SUB_KEY, true);
@@ -105,11 +105,11 @@ void upload_systeminfo()
     {
         // 说明在充电
         LOG_D("设备充电中...");
-        face->SetBatLevel(0xFF);
+        // //face->SetBatLevel(0xFF);
     }
     else
     {
-        face->SetBatLevel(batteryLevel);
+        // //face->SetBatLevel(batteryLevel);
     }
     if (batteryLevel < 10)
     {
@@ -146,8 +146,8 @@ void up_click(float number)
     esp_ai.setVolume(volume);
     LOG_D("音量加: %d", volume);
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-    face->SetChatMessage("音量：" + String(int(volume * 100)) + "%");
-    face->SetVolume(int(volume * 100));
+    // //face->SetChatMessage("音量：" + String(int(volume * 100)) + "%");
+    // //face->SetVolume(int(volume * 100));
 #endif
 
     // 存储到本地
@@ -171,8 +171,8 @@ void down_click(float number)
     esp_ai.setVolume(volume);
     LOG_D("音量减: %d", volume);
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-    face->SetChatMessage("音量：" + String(int(volume * 100)) + "%");
-    face->SetVolume(int(volume * 100));
+    //face->SetChatMessage("音量：" + String(int(volume * 100)) + "%");
+    //face->SetVolume(int(volume * 100));
 #endif
 
     // 存储到本地
@@ -203,15 +203,6 @@ void onError(String code, String at_pos, String message)
         esp_ai.setLocalData("ext1", "");
         ESP.restart();
     }
-
-    //  if (code == "002")
-    // {
-    //     // 清除 api_key 重启板子
-    //     esp_ai.setLocalData("wifi_name", "");
-    //     esp_ai.setLocalData("wifi_pwd", "");
-    //     esp_ai.setLocalData("ext1", "");
-    //     ESP.restart();
-    // }
 }
 
 // ========================= 指令监听 =========================
@@ -249,13 +240,13 @@ void on_command(String command_id, String data)
     else if (command_id == "on_iat_cb")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage(data);
+        //face->SetChatMessage(data);
 #endif
     }
     else if (command_id == "on_llm_cb")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage(data);
+        //face->SetChatMessage(data);
 #endif
     }
 }
@@ -273,26 +264,26 @@ void on_session_status(String status)
     // 处理会话状态
     if (status == "iat_start")
     {
-        face->SetEmotion("聆听中");
-        face->ShowNotification("聆听中");
+        //face->SetEmotion("聆听中");
+        //face->ShowNotification("聆听中");
     }
     else if (status == "iat_end")
     {
-        face->SetEmotion("说话中");
-        face->ShowNotification("说话中");
+        //face->SetEmotion("说话中");
+        //face->ShowNotification("说话中");
     }
     else if (status == "tts_real_end")
     {
-        face->SetEmotion("默认");
-        face->ShowNotification("待命中");
+        //face->SetEmotion("默认");
+        //face->ShowNotification("待命中");
     }
     else if (status == "tts_chunk_start")
     {
-        // face->DrawStrLeftTop("AI说话中...", 0);
+        // //face->DrawStrLeftTop("AI说话中...", 0);
     }
     else
     {
-        // face->DrawStrLeftTop("待命中", 2);
+        // //face->DrawStrLeftTop("待命中", 2);
     }
 #endif
 }
@@ -306,28 +297,28 @@ void on_net_status(String status)
     if (status == "0_ing")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("正在连接网络");
+        //face->SetChatMessage("正在连接网络");
 #endif
     };
     if (status == "0_ap")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->ShowNotification("配网模式");
-        face->SetChatMessage("连接" + WiFi.softAPSSID() + "热点配网");
+        //face->ShowNotification("配网模式");
+        //face->SetChatMessage("连接" + WiFi.softAPSSID() + "热点配网");
 #endif
     };
 
     if (status == "2")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("正在连接服务");
+        //face->SetChatMessage("正在连接服务");
 #endif
     };
 
     // 已连接服务
     if (status == "3")
     {
-        face->SetChatMessage("服务连接成功");
+        //face->SetChatMessage("服务连接成功");
     };
 }
 
@@ -338,7 +329,7 @@ bool onBegin()
         return true;
     }
 
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3)
     return true;
 #endif
 
@@ -349,7 +340,7 @@ bool onBegin()
     if (batteryLevel < 10)
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("电量过低，请连接充电器。");
+        //face->SetChatMessage("电量过低，请连接充电器。");
 #endif
 
         while (true)
@@ -366,7 +357,7 @@ bool onBegin()
 }
 
 void on_ready()
-{
+{ 
     String ext3 = esp_ai.getLocalData("ext3");
     if (ext3 == "")
     {
@@ -572,7 +563,7 @@ String on_bind_device(JSONVar data)
     if (ext4 != "" && ext5 != "")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("设备激活成功");
+        //face->SetChatMessage("设备激活成功");
 #endif
         return "{\"success\":true,\"message\":\"设备激活成功。\"}";
     }
@@ -632,7 +623,7 @@ String on_bind_device(JSONVar data)
             LOG_D("[Error HTTP] 请求网址: %s", url.c_str());
 
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-            face->SetChatMessage("设备激活失败，请重试。");
+            //face->SetChatMessage("设备激活失败，请重试。");
 #endif
             // 这个 json 数据中的 message 会在配网页面弹出
             return "{\"success\":false,\"message\":\"设备绑定失败，错误码:" + String(httpCode) + "，重启设备试试呢。\"}";
@@ -645,7 +636,7 @@ String on_bind_device(JSONVar data)
             if (success == false)
             {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-                face->SetChatMessage("绑定设备失败。");
+                //face->SetChatMessage("绑定设备失败。");
 #endif
                 // 绑定设备失败
                 LOG_D("[Error] -> 绑定设备失败，错误信息：%s", message.c_str());
@@ -657,7 +648,7 @@ String on_bind_device(JSONVar data)
             else
             {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-                face->SetChatMessage("设备激活成功！");
+                //face->SetChatMessage("设备激活成功！");
 #endif
                 // 设备激活成功！
                 LOG_D("[Info] -> 设备激活成功！");
@@ -669,7 +660,7 @@ String on_bind_device(JSONVar data)
         else
         {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-            face->SetChatMessage("设备激活失败，请求服务失败！");
+            //face->SetChatMessage("设备激活失败，请求服务失败！");
 #endif
             LOG_D("[Error HTTP] 请求网址: %s", url.c_str());
             on_bind_device_http.end();
@@ -803,7 +794,7 @@ void onEmotion(String emotion)
     Serial.print("情绪下发当前情绪：");
     Serial.println(emotion);
 
-    face->SetEmotion(emotion);
+    // face->SetEmotion(emotion);
     emotion_led_control(emotion);
     // LOG_D("情绪：%s", emotion.c_str());
 }
@@ -838,7 +829,7 @@ void update_check_timer3(int arg)
     }
 }
 
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3)
 void attach_vol_add()
 {
     up_click(0.1);
@@ -877,10 +868,6 @@ void setup()
     BIN_ID = "a8a840de18d4446b8b23ca28d42e2a86";
 #elif defined(IS_ESP_AI_S3_TFT)
     BIN_ID = "6f608d802b4c4fa392cf337f93bda630";
-#elif defined(IS_WU_MING_TFT)
-    BIN_ID = "xxx";
-#elif defined(IS_AI_VOX_TFT)
-    BIN_ID = "xxx";
 #endif
 
     // 配置ADC电压基准值与衰减倍数
@@ -907,14 +894,14 @@ void setup()
     face = new Face(4, "096", oled_sck.toInt(), oled_sda.toInt());
 #elif defined(IS_ESP_AI_S3_DOUBLE_OLED)
     face = new Face(6, "096_2", oled_sck.toInt(), oled_sda.toInt());
-#elif defined(IS_ESP_AI_S3_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_WU_MING_TFT)
+#elif defined(IS_ESP_AI_S3_TFT) || defined(IS_AI_VOX_TFT)
     face = new Face(8, "240*240");
 #endif
     otaManager = new ESPOTAManager(&webSocket_yw, &esp_ai, face);
 
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
     // 更新文字
-    face->SetChatMessage("ESP-AI V" + _version);
+    //face->SetChatMessage("ESP-AI V" + _version);
     xTaskCreate(faceTask, "faceTask", 1024 * 5, NULL, 1, NULL);
 #endif
 
@@ -946,9 +933,8 @@ void setup()
         kwh_enable = "1";
     }
 
-    ESP_AI_reset_btn_config reset_btn_config = {};
 // 小智AI 引脚不一样
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3)
     lights_data = "48";
     speaker_bck = "15";
     speaker_ws = "16";
@@ -957,8 +943,6 @@ void setup()
     mic_ws = "4";
     mic_data = "6";
     kwh_enable = "0";
-    // 按钮冲突，随便设置一个
-    reset_btn_config.pin = 46;
 #endif
     // LOG_D("lights_data: ");
     // LOG_D(lights_data);
@@ -1024,10 +1008,7 @@ void setup()
 
     ESP_AI_volume_config volume_config = {volume_pin.toInt(), 4096, 1, volume_enable == "0" ? false : true};
 
-    ESP_AI_lights_config lights_config = {18}; // esp32s3 开发板是 48
-
 #if defined(IS_AI_VOX_TFT)
-    lights_data = "41";
     // AI_VOX 开发板
     ESP_AI_i2s_config_mic i2s_config_mic = {5, 2, 4, 18, I2S_CHANNEL_FMT_RIGHT_LEFT};
     ESP_AI_i2s_config_speaker i2s_config_speaker = {
@@ -1041,6 +1022,8 @@ void setup()
     ESP_AI_i2s_config_speaker i2s_config_speaker = {speaker_bck.toInt(), speaker_ws.toInt(), speaker_data.toInt()};
 #endif
 
+    ESP_AI_reset_btn_config reset_btn_config = {};
+    ESP_AI_lights_config lights_config = {18}; // esp32s3 开发板是 48
     if (lights_data != "")
     {
         lights_config.pin = lights_data.toInt();
@@ -1082,14 +1065,14 @@ void setup()
     String loc_volume = esp_ai.getLocalData("ext2");
     if (loc_volume != "")
     {
-        face->SetVolume(int(volume * 100));
+        // //face->SetVolume(int(volume * 100));
         volume = loc_volume.toFloat();
         LOG_D("本地音量：%0.2f", volume);
         esp_ai.setVolume(volume);
     }
     else
     {
-        face->SetVolume(int(1 * 100));
+        // //face->SetVolume(int(1 * 100));
     }
 
     // boot 按钮唤醒方式 esp-ai 库有问题，这begin()后再设置下就好了
@@ -1116,7 +1099,7 @@ void setup()
     timer.setInterval(1000L, update_check_timer3, 0);
     timer.setInterval(10L, espai_loop_timer5, 0);
 
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3)
     // 按键初始化
     button_vol_add.attachClick(attach_vol_add); // 加音量按键
     button_vol_sub.attachClick(attach_vol_sub); // 减音量按键
