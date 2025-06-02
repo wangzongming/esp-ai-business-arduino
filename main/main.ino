@@ -7,7 +7,7 @@
 #include <Arduino.h>
 
 // ==================版本定义=========================
-String _version = "1.27.37";
+String _version = "1.27.35";
 
 // ==================OTA 升级定义=========================
 // 是否为官方固件， 如果是您自己的固件请改为 "0"
@@ -878,9 +878,9 @@ void setup()
 #elif defined(IS_ESP_AI_S3_TFT)
     BIN_ID = "6f608d802b4c4fa392cf337f93bda630";
 #elif defined(IS_WU_MING_TFT)
-    BIN_ID = "xxx";
+    BIN_ID = "5666039aeefe4e49a177988c924165f1";
 #elif defined(IS_AI_VOX_TFT)
-    BIN_ID = "xxx";
+    BIN_ID = "3b45f2bbb79b4940a925d0e4822352f1";
 #endif
 
     // 配置ADC电压基准值与衰减倍数
