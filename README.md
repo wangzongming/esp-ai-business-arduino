@@ -53,8 +53,9 @@ esp-ai-business-arduion/
 1. 先看一遍文档： 
 [ Arduino IDE 文档](https://espai.fun/guide/client-dev/#%E4%B8%80%E3%80%81arduino-ide-%E7%8E%AF%E5%A2%83)
 
-2. 下载依赖库 `libraries2.zip`，然后解压到 `C:\Users\[用户名]\Documents\Arduino\libraries` (注意 用户名自己改成你电脑用户名，并且删除中括号。)
+2. 下载依赖库 `libraries.zip`，然后解压到 `C:\Users\[用户名]\Documents\Arduino\libraries` (注意 用户名自己改成你电脑用户名，并且删除中括号。)
 
+3. 将 `main\platformio.ini` 中的 `lib_dir` 改为 `../libraries`
 
 
 # 彩屏图片更改
