@@ -55,7 +55,9 @@ esp-ai-business-arduion/
 
 2. 下载依赖库 `libraries.zip`，然后解压到 `C:\Users\[用户名]\Documents\Arduino\libraries` (注意 用户名自己改成你电脑用户名，并且删除中括号。)
 
-3. 将 `main\platformio.ini` 中的 `lib_dir` 改为 `../libraries`
+
+**注意**
+如果你用 platformIO，需要注意自行将： `main\platformio.ini` 中的 `lib_dir` 改为 `../libraries`
 
 
 # 彩屏图片更改
