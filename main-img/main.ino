@@ -1426,7 +1426,7 @@ void drawStrAniFn()
             }
             u8g2->print(bttomText.c_str());
             sprite.pushSprite(0, 210);
-            bttomTextPrevLeft -= 5;
+            bttomTextPrevLeft -= 8;
         }
     }
 }
