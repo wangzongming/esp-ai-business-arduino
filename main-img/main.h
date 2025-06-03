@@ -1,4 +1,12 @@
-#include "Face.h"
+
+#pragma once
+#include "./globals.h"
+#include <TJpg_Decoder.h> // JPEG decoder library
+#include "SPI.h"
+#include <TFT_eSPI.h> // Hardware-specific library for TFT display
+#include "U8g2_for_TFT_eSPI.h"
+#include <map>
+#include "esp_heap_caps.h"
 
 #include "src/logging.h"
 #include "src/ota_manager.h"
@@ -11,10 +19,10 @@
 // ================= S3 开发板选择 ====================
 // #define IS_ESP_AI_S3_BASIC  // ESP-AI S3 开发板（不带屏幕、不带电池检查，只有基础功能） ing...
 // #define IS_ESP_AI_S3_NO_SCREEN  // ESP-AI S3 开发板（不带屏幕） 
-#define IS_ESP_AI_S3_OLED         // ESP-AI S3 开发板（OLED 屏）
+// #define IS_ESP_AI_S3_OLED         // ESP-AI S3 开发板（OLED 屏）
 // #define IS_ESP_AI_S3_DOUBLE_OLED         // ESP-AI S3 开发板（双OLED 屏）
 // #define IS_ESP_AI_S3_TFT          // ESP-AI S3 开发板（TFT 屏）
-// #define IS_AI_VOX_TFT  // AI_VOX S3 开发板（TFT 屏）
+#define IS_AI_VOX_TFT  // AI_VOX S3 开发板（TFT 屏）
 // #define IS_WU_MING_TFT // 无名科技 S3 开发板（TFT 屏）
 // #define IS_XIAO_ZHI_S3_2 // 小智AI S3 二代长条屏开发板
 // #define IS_XIAO_ZHI_S3_3  // 小智AI S3 三代方平屏开发板
@@ -38,6 +46,7 @@
 #endif
 
 #define BAT_PIN 8 // 电池电压检测引脚
+
 
 // ================== 调试打印 ==========
 // #define LOG_D(fmt, ...)   printf_P(("[%s][%d]:" fmt "\r\n") , __func__, __LINE__, ##__VA_ARGS__)
@@ -1460,3 +1469,5 @@ const char html_str[] PROGMEM = R"rawliteral(
 </script>
 )rawliteral";
 #endif
+
+ 

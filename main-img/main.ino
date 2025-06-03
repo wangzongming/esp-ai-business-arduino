@@ -1,3 +1,4 @@
+
 #include <esp-ai.h>
 #include <Wire.h>
 #include <Battery.h>
@@ -6,22 +7,51 @@
 #include <OneButton.h>
 #include <Arduino.h>
 
+// 图片缓存结构体
+struct ImageCache
+{
+    uint8_t *buffer;
+    int len;
+};
+
+std::map<String, ImageCache> imageCacheMap;
+std::vector<String> imageCacheOrder;
+const size_t MAX_CACHE_IMAGES = 10; // 最大缓存的图片数量，超过后自动清除旧数据
+
+// Declare TFT object
+TFT_eSPI tft = TFT_eSPI();
+TFT_eSprite sprite = TFT_eSprite(&tft);
+U8g2_for_TFT_eSPI *u8g2;
+uint8_t Img_Left = 45, Img_Top = 30, Img_W = 150, Img_H = 200;
+
+struct EmotionImagePair
+{
+    String emotion;
+    String imageURL;
+};
+
+// 定义一个情感与图片 URL 的映射数组
+EmotionImagePair emotionToImage[] = {
+    // 第一个图一定要放默认图片
+    {"默认", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/qwq.jpg"},
+    {"快乐", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kuaile.jpg"},
+    {"愤怒", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/shengqi.jpg"},
+    {"疑问", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/daizhu.jpg"},
+    {"伤心", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kuqi.jpg"},
+};
+
 // ==================版本定义=========================
-String _version = "1.27.36";
+String _version = "1.4.0";
 
 // ==================OTA 升级定义=========================
 // 是否为官方固件， 如果是您自己的固件请改为 "0"
-String is_official = "1";
+String is_official = "0";
 
 // 固件ID， 请正确填写，否则无法进行 OTA 升级。
 // 获取方式： 我的固件 -> 固件ID
-String BIN_ID = "0";
+String BIN_ID = "6af4b3e053e3420db312451f9fb38eab";
 
 // ====================================================
-
-// ==================全局对象===========================
-// 屏幕显示对象
-Face *face;
 
 // 定时器对象
 SimpleTimer timer;
@@ -80,6 +110,20 @@ Adafruit_NeoPixel pixelsEmotion(emotion_led_number, EMOTION_LIGHT_PIN, NEO_GRB +
 // OTA 检测升级过了，用于应付重新连接服务后不要重复去进行提示 OTA 升级
 bool ota_ed = false;
 
+// 当前情绪状态
+String emotion = "无情绪";
+String prve_emotion = "无情绪";
+long prve_emotion_time = 0;
+
+// 底部绘制的可移动的文字
+String bttomText = "";
+// 上一次移动的坐标
+int bttomTextPrevLeft = 0;
+
+// 顶部状态图标
+String topLeftText = "";
+String prevTopLeftText = "";
+
 // ======================END=======================
 
 // 上报设备电量的函数
@@ -105,11 +149,11 @@ void upload_systeminfo()
     {
         // 说明在充电
         LOG_D("设备充电中...");
-        face->SetBatLevel(0xFF);
+        // face->SetBatLevel(0xFF);
     }
     else
     {
-        face->SetBatLevel(batteryLevel);
+        // face->SetBatLevel(batteryLevel);
     }
     if (batteryLevel < 10)
     {
@@ -146,8 +190,9 @@ void up_click(float number)
     esp_ai.setVolume(volume);
     LOG_D("音量加: %d", volume);
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-    face->SetChatMessage("音量：" + String(int(volume * 100)) + "%");
-    face->SetVolume(int(volume * 100));
+    // face->SetChatMessage("音量：" + String(int(volume * 100)) + "%");
+    bttomText = "音量：" + String(int(volume * 100)) + "%";
+    // face->SetVolume(int(volume * 100));
 #endif
 
     // 存储到本地
@@ -171,8 +216,10 @@ void down_click(float number)
     esp_ai.setVolume(volume);
     LOG_D("音量减: %d", volume);
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-    face->SetChatMessage("音量：" + String(int(volume * 100)) + "%");
-    face->SetVolume(int(volume * 100));
+    // face->SetChatMessage("音量：" + String(int(volume * 100)) + "%");
+    bttomText = "音量：" + String(int(volume * 100)) + "%";
+    bttomTextPrevLeft = 0;
+    // face->SetVolume(int(volume * 100));
 #endif
 
     // 存储到本地
@@ -249,13 +296,17 @@ void on_command(String command_id, String data)
     else if (command_id == "on_iat_cb")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage(data);
+        // face->SetChatMessage(data);
+        bttomText = data;
+        bttomTextPrevLeft = 0;
 #endif
     }
     else if (command_id == "on_llm_cb")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage(data);
+        // face->SetChatMessage(data);
+        bttomText = data;
+        bttomTextPrevLeft = 0;
 #endif
     }
 }
@@ -273,18 +324,24 @@ void on_session_status(String status)
     // 处理会话状态
     if (status == "iat_start")
     {
-        face->SetEmotion("聆听中");
-        face->ShowNotification("聆听中");
+        // face->SetEmotion("聆听中");
+        // face->ShowNotification("聆听中");
+
+        topLeftText = "聆听中";
     }
     else if (status == "iat_end")
     {
-        face->SetEmotion("说话中");
-        face->ShowNotification("说话中");
+        // face->SetEmotion("说话中");
+        // face->ShowNotification("说话中");
+
+        topLeftText = "说话中";
     }
     else if (status == "tts_real_end")
     {
-        face->SetEmotion("默认");
-        face->ShowNotification("待命中");
+        // face->SetEmotion("默认");
+        // face->ShowNotification("待命中");
+
+        topLeftText = "待命中";
     }
     else if (status == "tts_chunk_start")
     {
@@ -306,22 +363,23 @@ void on_net_status(String status)
     if (status == "0_ing")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("正在连接网络");
+        // face->SetChatMessage("正在连接网络");
+        bttomText = "正在连接网络";
+        bttomTextPrevLeft = 0;
 #endif
     };
     if (status == "0_ap")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->ShowNotification("配网模式");
+        // face->ShowNotification("配网模式");
+        topLeftText = "配网模式";
 #if defined(BLE_MODEL)
-        face->SetChatMessage("请打开小程序配网");
-        face->SetChatMessage("请打开小程序配网");
-        face->SetChatMessage("请打开小程序配网");
-        face->SetChatMessage("请打开小程序配网");
-        face->SetChatMessage("请打开小程序配网");
-        face->SetChatMessage("请打开小程序配网");
+        bttomText = "请打开小程序配网";
+        bttomTextPrevLeft = 0;
 #else
-        face->SetChatMessage("连接" + WiFi.softAPSSID() + "热点配网");
+        // face->SetChatMessage("连接" + WiFi.softAPSSID() + "热点配网");
+        bttomText = "连接" + WiFi.softAPSSID() + "热点配网";
+        bttomTextPrevLeft = 0;
 #endif
 #endif
     };
@@ -329,14 +387,18 @@ void on_net_status(String status)
     if (status == "2")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("正在连接服务");
+        // face->SetChatMessage("正在连接服务");
+        bttomText = "正在连接服务";
+        bttomTextPrevLeft = 0;
 #endif
     };
 
     // 已连接服务
     if (status == "3")
     {
-        face->SetChatMessage("服务连接成功");
+        // face->SetChatMessage("服务连接成功");
+        bttomText = "服务连接成功";
+        bttomTextPrevLeft = 0;
     };
 }
 
@@ -358,7 +420,9 @@ bool onBegin()
     if (batteryLevel < 10)
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("电量过低，请连接充电器。");
+        // face->SetChatMessage("电量过低，请连接充电器。");
+        bttomText = "电量过低，请连接充电器。";
+        bttomTextPrevLeft = 0;
 #endif
 
         while (true)
@@ -391,7 +455,11 @@ void on_ready()
     {
         ota_ed = true;
         String loc_api_key = esp_ai.getLocalData("ext1");
-        auto_update(device_id, loc_api_key, BIN_ID, is_official, domain, _version, *face, esp_ai, *otaManager);
+        auto_update(device_id, loc_api_key, BIN_ID, is_official, domain, _version, esp_ai, *otaManager,
+                    &bttomText,
+                    &bttomTextPrevLeft,
+                    &topLeftText,
+                    &prevTopLeftText);
     }
 }
 
@@ -580,7 +648,9 @@ String on_bind_device(JSONVar data)
     if (ext4 != "" && ext5 != "")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("设备激活成功");
+        // face->SetChatMessage("设备激活成功");
+        bttomText = "设备激活成功";
+        bttomTextPrevLeft = 0;
 #endif
         return "{\"success\":true,\"message\":\"设备激活成功。\"}";
     }
@@ -636,14 +706,15 @@ String on_bind_device(JSONVar data)
             LOG_D("[Error HTTP] 请求网址: %s", url.c_str());
 
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-            face->SetChatMessage("设备激活失败，请重试。");
+            // face->SetChatMessage("设备激活失败，请重试。");
+            bttomText = "设备激活失败，请重试。";
+            bttomTextPrevLeft = 0;
 #endif
 
-
-                play_builtin_audio(bind_err_mp3, bind_err_mp3_len);
-                vTaskDelay(500 / portTICK_PERIOD_MS);
-                esp_ai.awaitPlayerDone();
-                vTaskDelay(1000 / portTICK_PERIOD_MS);
+            play_builtin_audio(bind_err_mp3, bind_err_mp3_len);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+            esp_ai.awaitPlayerDone();
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
 
             // 这个 json 数据中的 message 会在配网页面弹出
             return "{\"success\":false,\"message\":\"设备绑定失败，错误码:" + String(httpCode) + "，重启设备试试呢。\"}";
@@ -656,7 +727,9 @@ String on_bind_device(JSONVar data)
             if (success == false)
             {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-                face->SetChatMessage("绑定设备失败：" + message);
+                // face->SetChatMessage("绑定设备失败：" + message);
+                bttomText = "绑定设备失败：";
+                bttomTextPrevLeft = 0;
 #endif
                 // 绑定设备失败
                 LOG_D("[Error] -> 绑定设备失败，错误信息：%s", message.c_str());
@@ -665,7 +738,7 @@ String on_bind_device(JSONVar data)
 
                 play_builtin_audio(bind_err_mp3, bind_err_mp3_len);
                 vTaskDelay(100 / portTICK_PERIOD_MS);
-                esp_ai.awaitPlayerDone(); 
+                esp_ai.awaitPlayerDone();
 
                 // 这个 json 数据中的 message 会在配网页面弹出
                 return "{\"success\":false,\"message\":\"绑定设备失败，错误原因：" + message + "\"}";
@@ -673,7 +746,9 @@ String on_bind_device(JSONVar data)
             else
             {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-                face->SetChatMessage("设备激活成功！");
+                // face->SetChatMessage("设备激活成功！");
+                bttomText = "设备激活成功！";
+                bttomTextPrevLeft = 0;
 #endif
                 // 设备激活成功！
                 LOG_D("[Info] -> 设备激活成功！");
@@ -685,7 +760,9 @@ String on_bind_device(JSONVar data)
         else
         {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-            face->SetChatMessage("设备激活失败，请求服务失败！");
+            // face->SetChatMessage("设备激活失败，请求服务失败！");
+            bttomText = "设备激活失败，请求服务失败！";
+            bttomTextPrevLeft = 0;
 #endif
             LOG_D("[Error HTTP] 请求网址: %s", url.c_str());
             on_bind_device_http.end();
@@ -768,12 +845,12 @@ void faceTask(void *arg)
         // OTA 升级时更新慢一点
         if (otaManager->isUpdating())
         {
-            face->Update();
+            // face->Update();
             vTaskDelay(500 / portTICK_PERIOD_MS);
         }
         else
         {
-            face->Update();
+            // face->Update();
 #if defined(IS_ESP_AI_S3_TFT)
             vTaskDelay(30 / portTICK_PERIOD_MS); // 多增加点时间
 #endif
@@ -784,8 +861,6 @@ void faceTask(void *arg)
 }
 #endif
 
-long prve_emotion_time = 0;
-static String prve_emotion = "无情绪";
 void emotion_led_control(String &emotion)
 {
     // 情绪灯光
@@ -813,15 +888,11 @@ void emotion_led_control(String &emotion)
 }
 
 // 情绪检测
-void onEmotion(String emotion)
+void onEmotion(String _emotion)
 {
-
-    Serial.print("情绪下发当前情绪：");
-    Serial.println(emotion);
-
-    face->SetEmotion(emotion);
+    // face->SetEmotion(emotion);
     emotion_led_control(emotion);
-    // LOG_D("情绪：%s", emotion.c_str());
+    emotion = _emotion;
 }
 
 void report_systeminfo_timer1(int arg)
@@ -880,24 +951,17 @@ void espai_loop_timer5(int arg)
     }
 }
 
+void render_text_timer(int arg)
+{
+    // 文字渲染
+    drawStrAniFn();
+    drawStrTL();
+}
+
 void setup()
 {
     Serial.begin(115200);
     delay(500);
-
-#if defined(IS_XIAO_ZHI_S3_2)
-    BIN_ID = "756ed3cc63604dc0bb2dcfc24a602a25";
-#elif defined(IS_XIAO_ZHI_S3_3)
-    BIN_ID = "2c83b29be98d43b0a62572a379d8352b";
-#elif defined(IS_ESP_AI_S3_NO_SCREEN)
-    BIN_ID = "a8a840de18d4446b8b23ca28d42e2a86";
-#elif defined(IS_ESP_AI_S3_TFT)
-    BIN_ID = "6f608d802b4c4fa392cf337f93bda630";
-#elif defined(IS_WU_MING_TFT)
-    BIN_ID = "5666039aeefe4e49a177988c924165f1";
-#elif defined(IS_AI_VOX_TFT)
-    BIN_ID = "3b45f2bbb79b4940a925d0e4822352f1";
-#endif
 
     // 配置ADC电压基准值与衰减倍数
     battery.begin(1250, 4.0);
@@ -915,22 +979,17 @@ void setup()
         oled_sda = "39";
     }
 
-#if defined(IS_XIAO_ZHI_S3_2)
-    face = new Face(4, "091", 42, 41);
-#elif defined(IS_XIAO_ZHI_S3_3)
-    face = new Face(4, "096", 42, 41);
-#elif defined(IS_ESP_AI_S3_OLED)
-    face = new Face(4, "096", oled_sck.toInt(), oled_sda.toInt());
-#elif defined(IS_ESP_AI_S3_DOUBLE_OLED)
-    face = new Face(6, "096_2", oled_sck.toInt(), oled_sda.toInt());
-#elif defined(IS_ESP_AI_S3_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_WU_MING_TFT)
-    face = new Face(8, "240*240");
-#endif
-    otaManager = new ESPOTAManager(&webSocket_yw, &esp_ai, face);
+    otaManager = new ESPOTAManager(&webSocket_yw, &esp_ai,
+                                   &bttomText,
+                                   &bttomTextPrevLeft,
+                                   &topLeftText,
+                                   &prevTopLeftText);
 
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
     // 更新文字
-    face->SetChatMessage("ESP-AI V" + _version);
+    // face->SetChatMessage("ESP-AI V" + _version);
+    bttomText = "ESP-AI V" + _version;
+    bttomTextPrevLeft = 0;
     xTaskCreate(faceTask, "faceTask", 1024 * 5, NULL, 1, NULL);
 #endif
 
@@ -1103,14 +1162,14 @@ void setup()
     String loc_volume = esp_ai.getLocalData("ext2");
     if (loc_volume != "")
     {
-        face->SetVolume(int(volume * 100));
+        // face->SetVolume(int(volume * 100));
         volume = loc_volume.toFloat();
         LOG_D("本地音量：%0.2f", volume);
         esp_ai.setVolume(volume);
     }
     else
     {
-        face->SetVolume(int(1 * 100));
+        // face->SetVolume(int(1 * 100));
     }
 
     // boot 按钮唤醒方式 esp-ai 库有问题，这begin()后再设置下就好了
@@ -1131,11 +1190,37 @@ void setup()
     // 连接业务服务器
     webScoket_yw_main();
 
+    // Initialize TFT screen
+    tft.begin(); // Fill screen with black
+    tft.fillScreen(tft.color565(240, 240, 230));
+    int width_ = tft.width();
+    int height_ = tft.height();
+    sprite.createSprite(width_, height_);
+    sprite.fillSprite(0xFFFF);
+    u8g2 = new U8g2_for_TFT_eSPI();          // create u8g2 procedures
+    u8g2->begin(sprite);                     // connect u8g2 procedures to TFT_eSPI
+    u8g2->setFont(u8g2_font_wqy12_t_gb2312); // select u8g2 font from here: https://github.com/olikraus/u8g2/wiki/fntlistall
+    u8g2->setDrawColor(1);                   // 白色
+    // Set up the JPEG decoder with the callback function
+    TJpgDec.setCallback(tft_output);
+    // The jpeg image can be scaled by a factor of 1, 2, 4, or 8
+    TJpgDec.setJpgScale(1);
+    // The byte order can be swapped (set true for TFT_eSPI)
+    TJpgDec.setSwapBytes(true);
+    // 遍历并打印所有情感与图片的映射
+    for (int i = 0; i < sizeof(emotionToImage) / sizeof(emotionToImage[0]); i++)
+    {
+        renderImageFromURL(emotionToImage[i].imageURL.c_str(), true);
+    }
+    // 显示默认图片
+    renderImageFromURL(emotionToImage[0].imageURL.c_str(), false);
+
     // 定时器初始化
     timer.setInterval(report_systeminfo_interval, report_systeminfo_timer1, 0);
     timer.setInterval(1L, websocket_timer2, 0);
     timer.setInterval(1000L, update_check_timer3, 0);
     timer.setInterval(10L, espai_loop_timer5, 0);
+    timer.setInterval(50L, render_text_timer, 0);
 
 #if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT)
     // 按键初始化
@@ -1158,4 +1243,209 @@ void loop()
 
     // 定时器
     timer.run();
+
+    // 表情图片
+    if (prve_emotion != emotion)
+    {
+
+        if (emotion == "无情绪")
+        {
+            if ((millis() - prve_emotion_time) > 6000)
+            {
+                prve_emotion_time = millis();
+                prve_emotion = emotion;
+                renderImageFromURL(emotionToImage[0].imageURL.c_str(), false);
+            }
+        }
+        else
+        {
+            // 避免重复渲染表情
+            if ((millis() - prve_emotion_time) > 3000)
+            {
+                prve_emotion_time = millis();
+                prve_emotion = emotion;
+
+                // 遍历映射数组，查找情绪对应的图片 URL
+                for (int i = 0; i < sizeof(emotionToImage) / sizeof(emotionToImage[0]); i++)
+                {
+                    if (String(emotionToImage[i].emotion) == emotion)
+                    {
+                        renderImageFromURL(emotionToImage[i].imageURL.c_str(), false);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// This function will be called during decoding of the jpeg file to render each block to the TFT
+bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t *bitmap)
+{
+    if (y >= tft.height())
+        return 0; // Prevent drawing beyond screen
+
+    // This function automatically clips the image rendering at the TFT boundaries
+    tft.pushImage(x, y, w, h, bitmap);
+
+    // Return 1 to decode the next block
+    return 1;
+}
+void cacheImageToPSRAM(const String &url, uint8_t *buffer, int len)
+{
+    // 如果已存在，先释放旧缓存
+    if (imageCacheMap.count(url))
+    {
+        free(imageCacheMap[url].buffer);
+        imageCacheMap.erase(url);
+        imageCacheOrder.erase(std::remove(imageCacheOrder.begin(), imageCacheOrder.end(), url), imageCacheOrder.end());
+    }
+
+    // 超过最大缓存数，释放最旧的缓存
+    if (imageCacheOrder.size() >= MAX_CACHE_IMAGES)
+    {
+        String oldest = imageCacheOrder.front();
+        imageCacheOrder.erase(imageCacheOrder.begin());
+        if (imageCacheMap.count(oldest))
+        {
+            free(imageCacheMap[oldest].buffer);
+            imageCacheMap.erase(oldest);
+        }
+    }
+
+    // 加入新缓存
+    ImageCache img = {buffer, len};
+    imageCacheMap[url] = img;
+    imageCacheOrder.push_back(url);
+}
+
+// @param image_url   图片地址，建议 http
+// @param only_cache  仅仅只是做缓存
+void renderImageFromURL(const char *image_url, bool only_cache)
+{
+
+    int width_ = tft.width();
+    int height_ = tft.height();
+    tft.fillRect(Img_Left, Img_Top, Img_W, Img_H, tft.color565(240, 240, 230)); // 清除图片 
+    String url = String(image_url);
+
+    // 缓存命中
+    if (imageCacheMap.count(url))
+    {
+        if (only_cache) return;
+        ImageCache &img = imageCacheMap[url];
+        uint16_t w = 0, h = 0;
+        TJpgDec.getJpgSize(&w, &h, img.buffer, img.len);
+        TJpgDec.drawJpg(Img_Left, Img_Top, img.buffer, img.len);
+        return;
+    }
+
+    // 网络请求
+    HTTPClient http;
+    http.begin(image_url);
+    int httpCode = http.GET();
+
+    if (httpCode == HTTP_CODE_OK)
+    {
+        int len = http.getSize();
+
+        // 分配 PSRAM 缓冲区
+        uint8_t *buffer = (uint8_t *)heap_caps_malloc(len, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        if (!buffer)
+        {
+            Serial.println("PSRAM 分配失败！");
+            http.end();
+            return;
+        }
+
+        WiFiClient *stream = http.getStreamPtr();
+        int bytesRead = 0;
+        
+        // 改进的读取逻辑 - 确保读取所有数据
+        while (bytesRead < len)
+        {
+            // 等待数据可用
+            while (!stream->available()) {
+                delay(10); // 短暂延迟，避免CPU占用过高
+            }
+            
+            // 读取可用的字节，但不超过剩余需要的数量
+            int bytesAvailable = stream->available();
+            int toRead = min(bytesAvailable, len - bytesRead);
+            
+            // 批量读取数据
+            bytesRead += stream->readBytes(buffer + bytesRead, toRead);
+        }
+
+        // 缓存
+        cacheImageToPSRAM(url, buffer, len);
+
+        if (only_cache == false)
+        {
+            // 渲染
+            uint16_t w = 0, h = 0;
+            TJpgDec.getJpgSize(&w, &h, buffer, len);
+            TJpgDec.drawJpg(Img_Left, Img_Top, buffer, len);
+            // 不释放 buffer ，缓存保留
+        }
+    }
+    else
+    {
+        Serial.printf("HTTP GET 失败：%d\n", httpCode);
+    }
+
+    http.end();
+}
+
+
+// 渲染底部文字
+int fontHeight = 30;
+int spriteWidth = 0;
+void drawStrAniFn()
+{
+    if (spriteWidth == 0)
+    {
+        spriteWidth = tft.width();
+    }
+    if (bttomText != "")
+    {
+        // int scrollSpeed = map(bttomText.length(), 0, 50, 10, 3);  // 自动调节速度
+        if (bttomTextPrevLeft > -3000)
+        { // 太大就没必要再播放了
+            sprite.fillSprite(0xFFFF);
+            u8g2->setFontMode(1);
+            u8g2->setDrawColor(0);
+            // 一开始不滚动，等一会在滚动
+            if (bttomTextPrevLeft < -80)
+            {
+                u8g2->setCursor(bttomTextPrevLeft + 10, fontHeight - 5); // start writing at this position
+            }
+            else
+            {
+                u8g2->setCursor(0, fontHeight - 5); // start writing at this position
+            }
+            u8g2->print(bttomText.c_str());
+            sprite.pushSprite(0, 210);
+            bttomTextPrevLeft -= 5;
+        }
+    }
+}
+
+// 渲染左上角文字
+void drawStrTL()
+{
+    if (topLeftText != "")
+    {
+        if (prevTopLeftText != topLeftText)
+        {
+            prevTopLeftText = topLeftText;
+            sprite.fillSprite(0xFFFF);
+            u8g2->setFontMode(1);
+            u8g2->setDrawColor(0);
+            u8g2->setCursor(0, 30); // start writing at this position
+            u8g2->print(topLeftText.c_str());
+            // sprite.pushSprite(0, 0, 0, 0, 100, 50);
+            sprite.pushSprite(0, 0, 0, 0, 70, 40);
+        }
+    }
 }
