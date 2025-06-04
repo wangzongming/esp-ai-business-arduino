@@ -17,7 +17,7 @@ private:
     String deviceId;
     WebSocketsClient *webSocket;
     ESP_AI *esp_ai;
-    Face *face;
+    Face *face = nullptr;
 
     // OTA状态变量
     long startUpdateTime;

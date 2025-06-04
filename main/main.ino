@@ -7,7 +7,7 @@
 #include <Arduino.h>
 
 // ==================版本定义=========================
-String _version = "1.27.36";
+String _version = "1.29.38";
 
 // ==================OTA 升级定义=========================
 // 是否为官方固件， 如果是您自己的固件请改为 "0"
@@ -101,6 +101,7 @@ void upload_systeminfo()
     int batteryLevel = battery.level(); // 获取电池电量百分比
     LOG_D("上报电量：%d", batteryLevel);
 
+#if !defined(IS_ESP_AI_S3_NO_SCREEN)
     if (battery.getischarge())
     {
         // 说明在充电
@@ -111,6 +112,8 @@ void upload_systeminfo()
     {
         face->SetBatLevel(batteryLevel);
     }
+#endif
+
     if (batteryLevel < 10)
     {
         esp_ai.tts("设备电量不足10%啦，请帮我充电哦。");
@@ -336,7 +339,9 @@ void on_net_status(String status)
     // 已连接服务
     if (status == "3")
     {
+#if !defined(IS_ESP_AI_S3_NO_SCREEN)
         face->SetChatMessage("服务连接成功");
+#endif
     };
 }
 
@@ -391,7 +396,11 @@ void on_ready()
     {
         ota_ed = true;
         String loc_api_key = esp_ai.getLocalData("ext1");
-        auto_update(device_id, loc_api_key, BIN_ID, is_official, domain, _version, *face, esp_ai, *otaManager);
+#if defined(IS_ESP_AI_S3_NO_SCREEN)
+        auto_update(device_id, loc_api_key, BIN_ID, is_official, domain, _version, esp_ai, *otaManager);
+#else
+        auto_update(device_id, loc_api_key, BIN_ID, is_official, domain, _version, esp_ai, *otaManager, *face);
+#endif
     }
 }
 
@@ -639,11 +648,10 @@ String on_bind_device(JSONVar data)
             face->SetChatMessage("设备激活失败，请重试。");
 #endif
 
-
-                play_builtin_audio(bind_err_mp3, bind_err_mp3_len);
-                vTaskDelay(500 / portTICK_PERIOD_MS);
-                esp_ai.awaitPlayerDone();
-                vTaskDelay(1000 / portTICK_PERIOD_MS);
+            play_builtin_audio(bind_err_mp3, bind_err_mp3_len);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+            esp_ai.awaitPlayerDone();
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
 
             // 这个 json 数据中的 message 会在配网页面弹出
             return "{\"success\":false,\"message\":\"设备绑定失败，错误码:" + String(httpCode) + "，重启设备试试呢。\"}";
@@ -653,6 +661,7 @@ String on_bind_device(JSONVar data)
         {
             bool success = (bool)parse_res["success"];
             String message = (const char *)parse_res["message"];
+            String code = (const char *)parse_res["code"];
             if (success == false)
             {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
@@ -660,12 +669,20 @@ String on_bind_device(JSONVar data)
 #endif
                 // 绑定设备失败
                 LOG_D("[Error] -> 绑定设备失败，错误信息：%s", message.c_str());
+
                 // esp_ai.tts("绑定设备失败，重启设备试试呢，本次错误原因：" + message);
                 on_bind_device_http.end();
 
-                play_builtin_audio(bind_err_mp3, bind_err_mp3_len);
+                if (message.indexOf("不可以重复绑定") != -1)
+                {
+                    play_builtin_audio(chong_fu_bang_ding_mp3, chong_fu_bang_ding_mp3_len);
+                }
+                else
+                {
+                    play_builtin_audio(bind_err_mp3, bind_err_mp3_len);
+                }
                 vTaskDelay(100 / portTICK_PERIOD_MS);
-                esp_ai.awaitPlayerDone(); 
+                esp_ai.awaitPlayerDone();
 
                 // 这个 json 数据中的 message 会在配网页面弹出
                 return "{\"success\":false,\"message\":\"绑定设备失败，错误原因：" + message + "\"}";
@@ -897,6 +914,8 @@ void setup()
     BIN_ID = "5666039aeefe4e49a177988c924165f1";
 #elif defined(IS_AI_VOX_TFT)
     BIN_ID = "3b45f2bbb79b4940a925d0e4822352f1";
+#elif defined(IS_ESP_AI_S3_BASIC)
+    BIN_ID = "e9c8377a3e3e468990ec4d983b8eee1e";
 #endif
 
     // 配置ADC电压基准值与衰减倍数
@@ -926,7 +945,12 @@ void setup()
 #elif defined(IS_ESP_AI_S3_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_WU_MING_TFT)
     face = new Face(8, "240*240");
 #endif
+
+#if defined(IS_ESP_AI_S3_NO_SCREEN)
+    otaManager = new ESPOTAManager(&webSocket_yw, &esp_ai, nullptr);
+#else
     otaManager = new ESPOTAManager(&webSocket_yw, &esp_ai, face);
+#endif
 
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
     // 更新文字
@@ -1002,6 +1026,10 @@ void setup()
 
 #if defined(BLE_MODEL)
     wifi_config.way = "BLE";
+#endif
+
+#if defined(IS_ESP_AI_S3_BASIC)
+    kwh_enable = "0";
 #endif
 
     // [必  填] 唤醒方案： { 方案, 语音唤醒用的阈值(本方案忽略即可), 引脚唤醒方案(本方案忽略), 发送的字符串 }
@@ -1103,14 +1131,19 @@ void setup()
     String loc_volume = esp_ai.getLocalData("ext2");
     if (loc_volume != "")
     {
+
+#if !defined(IS_ESP_AI_S3_NO_SCREEN)
         face->SetVolume(int(volume * 100));
+#endif
         volume = loc_volume.toFloat();
         LOG_D("本地音量：%0.2f", volume);
         esp_ai.setVolume(volume);
     }
     else
     {
+#if !defined(IS_ESP_AI_S3_NO_SCREEN)
         face->SetVolume(int(1 * 100));
+#endif
     }
 
     // boot 按钮唤醒方式 esp-ai 库有问题，这begin()后再设置下就好了
@@ -1119,10 +1152,8 @@ void setup()
         pinMode(0, INPUT_PULLUP);
     }
 
-    if (ext4 != "" && ext5 != "")
-    {
-        return;
-    }
+    // 自定义服务器也可以和 ESP-AI 业务服务进行联通，而无限制。
+    // if (ext4 != "" && ext5 != "") return;
 
     // 情绪灯光
     pixelsEmotion.begin();
@@ -1145,17 +1176,21 @@ void setup()
 #endif
 }
 
-// long last_log_time = 0;
 void loop()
 {
-    // if (millis() - last_log_time > 100)
-    // {
-    //     last_log_time = millis();
-    //     Serial.print("===> 可用内存: ");
-    //     Serial.print(ESP.getFreeHeap() / 1024);
-    //     Serial.println("KB");
-    // }
-
+    // log_fh();
     // 定时器
     timer.run();
+}
+
+long last_log_time = 0;
+void log_fh()
+{
+    if (millis() - last_log_time > 100)
+    {
+        last_log_time = millis();
+        Serial.print("===> 可用内存: ");
+        Serial.print(ESP.getFreeHeap() / 1024);
+        Serial.println("KB");
+    }
 }

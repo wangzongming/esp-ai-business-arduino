@@ -22,9 +22,9 @@ void ESPOTAManager::init(String deviceId)
 }
 
 void ESPOTAManager::update(String url)
-{  
+{
     esp_ai->stopSession();
-    vTaskDelay(500 / portTICK_PERIOD_MS);  
+    vTaskDelay(500 / portTICK_PERIOD_MS);
     // 重置状态
     startUpdateEd = false;
     isUpdateProgress = false;
@@ -38,7 +38,7 @@ void ESPOTAManager::update(String url)
 #endif
 
     // 记录开始时间
-    startUpdateTime = millis(); 
+    startUpdateTime = millis();
     Serial.print("OTA 地址：");
     Serial.println(url);
 
@@ -50,7 +50,7 @@ void ESPOTAManager::update(String url)
     switch (ret)
     {
     case HTTP_UPDATE_FAILED:
-        LOG_D("[update] Update failed. Error code: %d", httpUpdate.getLastError()); 
+        LOG_D("[update] Update failed. Error code: %d", httpUpdate.getLastError());
         wait_mp3_player_done();
         play_builtin_audio(shen_ji_shi_bai_mp3, shen_ji_shi_bai_mp3_len);
         wait_mp3_player_done();
@@ -116,7 +116,9 @@ void ESPOTAManager::updateProgressCallback(int cur, int total)
         instance->otaProgress = String(percentage, 2) + "%";
 
         String progress = instance->otaProgress.c_str();
+#if !defined(IS_ESP_AI_S3_NO_SCREEN)
         instance->face->ShowNotification("升级进度： " + progress);
+#endif
 
         // 1.5秒钟发送一次进度
         if (millis() - instance->prevSendProgressTime > 1500)
