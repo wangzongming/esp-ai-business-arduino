@@ -10,9 +10,9 @@
 /****************************宏定义区*****************************/
 
 // ================= S3 开发板选择 ====================
-// #define IS_ESP_AI_S3_BASIC     // ESP-AI S3 开发板（不带屏幕、不带电池检查，只有基础功能），这个固件需要同时打开 IS_ESP_AI_S3_NO_SCREEN
-// #define IS_ESP_AI_S3_NO_SCREEN // ESP-AI S3 开发板（不带屏幕）
-#define IS_ESP_AI_S3_OLED // ESP-AI S3 开发板（OLED 屏）
+#define IS_ESP_AI_S3_BASIC     // ESP-AI S3 开发板（不带屏幕、不带电池检查，只有基础功能），这个固件需要同时打开 IS_ESP_AI_S3_NO_SCREEN
+#define IS_ESP_AI_S3_NO_SCREEN // ESP-AI S3 开发板（不带屏幕）
+// #define IS_ESP_AI_S3_OLED // ESP-AI S3 开发板（OLED 屏）
 // #define IS_ESP_AI_S3_DOUBLE_OLED         // ESP-AI S3 开发板（双OLED 屏）
 // #define IS_ESP_AI_S3_TFT          // ESP-AI S3 开发板（TFT 屏）
 // #define IS_AI_VOX_TFT  // AI_VOX S3 开发板（TFT 屏）
@@ -21,7 +21,7 @@
 // #define IS_XIAO_ZHI_S3_3  // 小智AI S3 三代方平屏开发板
 
 // ================= 蓝牙配网模式 ====================+
-#define BLE_MODEL
+// #define BLE_MODEL
 // ====================================================
 
 #define EMOTION_LIGHT_PIN 46 // 情绪灯光控制引脚

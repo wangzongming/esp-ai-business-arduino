@@ -7,7 +7,7 @@
 #include <Arduino.h>
 
 // ==================版本定义=========================
-String _version = "1.29.38";
+String _version = "1.29.39";
 
 // ==================OTA 升级定义=========================
 // 是否为官方固件， 如果是您自己的固件请改为 "0"
@@ -833,12 +833,14 @@ void emotion_led_control(String &emotion)
 void onEmotion(String emotion)
 {
 
-    Serial.print("情绪下发当前情绪：");
-    Serial.println(emotion);
+    // Serial.print("情绪下发当前情绪：");
+    // Serial.println(emotion);
 
+#if !defined(IS_ESP_AI_S3_NO_SCREEN)
     face->SetEmotion(emotion);
+#endif
+
     emotion_led_control(emotion);
-    // LOG_D("情绪：%s", emotion.c_str());
 }
 
 void report_systeminfo_timer1(int arg)
@@ -916,6 +918,8 @@ void setup()
     BIN_ID = "3b45f2bbb79b4940a925d0e4822352f1";
 #elif defined(IS_ESP_AI_S3_BASIC)
     BIN_ID = "e9c8377a3e3e468990ec4d983b8eee1e";
+#elif defined(IS_ESP_AI_S3_DOUBLE_OLED)
+    BIN_ID = "d0392954145448008b2cfed22b2b8a23";
 #endif
 
     // 配置ADC电压基准值与衰减倍数
