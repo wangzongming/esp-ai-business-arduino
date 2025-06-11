@@ -7,7 +7,7 @@
 #include <Arduino.h>
 
 // ==================版本定义=========================
-String _version = "1.29.39";
+String _version = "1.30.40";
 
 // ==================OTA 升级定义=========================
 // 是否为官方固件， 如果是您自己的固件请改为 "0"
@@ -25,7 +25,7 @@ Face *face;
 
 // 定时器对象
 SimpleTimer timer;
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_ESP_AI_S3_DOUBLE_OLED)
 // 按钮对象
 OneButton button_vol_add(VOL_ADD_KEY, true);
 OneButton button_vol_sub(VOL_SUB_KEY, true);
@@ -206,6 +206,14 @@ void onError(String code, String at_pos, String message)
         esp_ai.setLocalData("ext1", "");
         ESP.restart();
     }
+    if (message.indexOf("请充值") >= 0)
+    {
+#if !defined(IS_ESP_AI_S3_NO_SCREEN)
+        face->SetChatMessage("额度卡不足，请充值。");
+#endif
+        play_builtin_audio(yu_e_bu_zu_mp3, yu_e_bu_zu_mp3_len);
+        delay(5000);
+    }
 
     //  if (code == "002")
     // {
@@ -345,6 +353,54 @@ void on_net_status(String status)
     };
 }
 
+/**
+ * 电量检测
+ */
+int batteryDetection()
+{
+// ESP-AI 开发版需要做电量检测
+#if defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_ESP_AI_S3_TFT) || defined(IS_ESP_AI_S3_NO_SCREEN)
+    int batteryLevel = battery.level(); // 获取电池电量百分比
+    LOG_D("[Info] -> 电池电量：%d", batteryLevel);
+    if (batteryLevel < 10)
+    {
+        while (true)
+        {
+            batteryLow();
+        }
+
+        return false;
+    }
+    return batteryLevel;
+#else
+    return 100;
+#endif
+}
+void battery_detection_timer(int arg)
+{
+    batteryDetection();
+}
+
+/**
+ * 电量不足提示
+ */
+void batteryLow()
+{
+    if (!battery.getischarge())
+    { 
+        LOG_D("%s", "电量不足");
+        LOG_D("%s", "如果您的开发板没有电压检测模块，请在配网页面或者设备配置页面禁用电量检测功能。");
+        play_builtin_audio(mei_dian_le, mei_dian_le_len);
+#if !defined(IS_ESP_AI_S3_NO_SCREEN)
+        face->SetChatMessage("电量过低，请连接充电器。");
+#endif
+
+        pixelsEmotion.fill(pixelsEmotion.Color(255, 69, 0), 0, emotion_led_number);
+        pixelsEmotion.show();
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
+    }
+}
+
 bool onBegin()
 {
     if (kwh_enable == "0")
@@ -352,30 +408,11 @@ bool onBegin()
         return true;
     }
 
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_MA_ZHUANG_TFT)
     return true;
 #endif
 
-// ESP-AI 开发版需要做电量检测
-#if defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_ESP_AI_S3_TFT) || defined(IS_ESP_AI_S3_NO_SCREEN)
-    int batteryLevel = battery.level(); // 获取电池电量百分比
-    LOG_D("[Info] -> 电池电量：%d", batteryLevel);
-    if (batteryLevel < 10)
-    {
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("电量过低，请连接充电器。");
-#endif
-
-        while (true)
-        {
-            LOG_D("%s", "电量不足");
-            LOG_D("%s", "如果您的开发板没有电压检测模块，请在配网页面或者设备配置页面禁用电量检测功能。");
-            play_builtin_audio(mei_dian_le, mei_dian_le_len);
-        }
-
-        return false;
-    }
-#endif
+    batteryDetection();
     return true;
 }
 
@@ -873,7 +910,7 @@ void update_check_timer3(int arg)
     }
 }
 
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_ESP_AI_S3_DOUBLE_OLED)
 void attach_vol_add()
 {
     up_click(0.1);
@@ -920,6 +957,8 @@ void setup()
     BIN_ID = "e9c8377a3e3e468990ec4d983b8eee1e";
 #elif defined(IS_ESP_AI_S3_DOUBLE_OLED)
     BIN_ID = "d0392954145448008b2cfed22b2b8a23";
+#elif defined(IS_MA_ZHUANG_TFT)
+    BIN_ID = "xxx";
 #endif
 
     // 配置ADC电压基准值与衰减倍数
@@ -946,7 +985,7 @@ void setup()
     face = new Face(4, "096", oled_sck.toInt(), oled_sda.toInt());
 #elif defined(IS_ESP_AI_S3_DOUBLE_OLED)
     face = new Face(6, "096_2", oled_sck.toInt(), oled_sda.toInt());
-#elif defined(IS_ESP_AI_S3_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_WU_MING_TFT)
+#elif defined(IS_ESP_AI_S3_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_WU_MING_TFT) || defined(IS_MA_ZHUANG_TFT)
     face = new Face(8, "240*240");
 #endif
 
@@ -994,7 +1033,7 @@ void setup()
     ESP_AI_lights_config lights_config = {18}; // esp32s3 开发板是 48
     ESP_AI_reset_btn_config reset_btn_config = {};
 // 小智AI 引脚不一样
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_MA_ZHUANG_TFT)
     lights_data = "48";
     speaker_bck = "15";
     speaker_ws = "16";
@@ -1171,8 +1210,9 @@ void setup()
     timer.setInterval(1L, websocket_timer2, 0);
     timer.setInterval(1000L, update_check_timer3, 0);
     timer.setInterval(10L, espai_loop_timer5, 0);
+    timer.setInterval(600000L, battery_detection_timer, 0);
 
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_ESP_AI_S3_DOUBLE_OLED)
     // 按键初始化
     button_vol_add.attachClick(attach_vol_add); // 加音量按键
     button_vol_sub.attachClick(attach_vol_sub); // 减音量按键
@@ -1182,19 +1222,23 @@ void setup()
 
 void loop()
 {
-    // log_fh();
     // 定时器
     timer.run();
+    // log_fh();
 }
 
 long last_log_time = 0;
 void log_fh()
 {
-    if (millis() - last_log_time > 100)
+    if (millis() - last_log_time > 3000)
     {
         last_log_time = millis();
-        Serial.print("===> 可用内存: ");
-        Serial.print(ESP.getFreeHeap() / 1024);
-        Serial.println("KB");
+        // Serial.print("===> 可用内存: ");
+        // Serial.print(ESP.getFreeHeap() / 1024);
+        // Serial.println("KB"); 
+
+        Serial.print("是否在充电中: ");
+        Serial.println(battery.getischarge());
+
     }
 }

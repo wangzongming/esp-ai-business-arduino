@@ -259,6 +259,15 @@ void onError(String code, String at_pos, String message)
     //     esp_ai.setLocalData("ext1", "");
     //     ESP.restart();
     // }
+
+    if (message.indexOf("请充值") >= 0)
+    {
+#if !defined(IS_ESP_AI_S3_NO_SCREEN)
+        face->SetChatMessage("额度卡不足，请充值。");
+#endif
+        play_builtin_audio(yu_e_bu_zu_mp3, yu_e_bu_zu_mp3_len);
+        delay(5000);
+    }
 }
 
 // ========================= 指令监听 =========================
@@ -1326,13 +1335,14 @@ void renderImageFromURL(const char *image_url, bool only_cache)
 
     int width_ = tft.width();
     int height_ = tft.height();
-    tft.fillRect(Img_Left, Img_Top, Img_W, Img_H, tft.color565(240, 240, 230)); // 清除图片 
+    tft.fillRect(Img_Left, Img_Top, Img_W, Img_H, tft.color565(240, 240, 230)); // 清除图片
     String url = String(image_url);
 
     // 缓存命中
     if (imageCacheMap.count(url))
     {
-        if (only_cache) return;
+        if (only_cache)
+            return;
         ImageCache &img = imageCacheMap[url];
         uint16_t w = 0, h = 0;
         TJpgDec.getJpgSize(&w, &h, img.buffer, img.len);
@@ -1360,19 +1370,20 @@ void renderImageFromURL(const char *image_url, bool only_cache)
 
         WiFiClient *stream = http.getStreamPtr();
         int bytesRead = 0;
-        
+
         // 改进的读取逻辑 - 确保读取所有数据
         while (bytesRead < len)
         {
             // 等待数据可用
-            while (!stream->available()) {
+            while (!stream->available())
+            {
                 delay(10); // 短暂延迟，避免CPU占用过高
             }
-            
+
             // 读取可用的字节，但不超过剩余需要的数量
             int bytesAvailable = stream->available();
             int toRead = min(bytesAvailable, len - bytesRead);
-            
+
             // 批量读取数据
             bytesRead += stream->readBytes(buffer + bytesRead, toRead);
         }
@@ -1396,7 +1407,6 @@ void renderImageFromURL(const char *image_url, bool only_cache)
 
     http.end();
 }
-
 
 // 渲染底部文字
 int fontHeight = 30;
