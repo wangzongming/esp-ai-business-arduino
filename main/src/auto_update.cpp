@@ -20,6 +20,8 @@ void auto_update(String device_id, String api_key, String bin_id, String is_offi
     url += "&bin_id=" + bin_id;
     url += "&is_official=" + is_official;
 
+    Serial.print("升级地址：");
+    Serial.println(url);
     http.begin(url);
     http.addHeader("Content-Type", "application/json");
     int httpCode = http.GET();
@@ -66,6 +68,8 @@ void auto_update(String device_id, String api_key, String bin_id, String is_offi
 #endif
                         vTaskDelay(1000 / portTICK_PERIOD_MS);
                         esp_ai.tts("系统已经是最新版本啦！");
+                        vTaskDelay(1000 / portTICK_PERIOD_MS);
+                        wait_mp3_player_done();
                     }
                     else
                     {

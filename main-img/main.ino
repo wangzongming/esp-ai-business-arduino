@@ -61,7 +61,7 @@ OneButton button_vol_add(VOL_ADD_KEY, true);
 OneButton button_vol_sub(VOL_SUB_KEY, true);
 #endif
 /*** 测试地址 ***/
-// 业务服务地址，用于将设备信息传递到用户页面上
+// // 业务服务地址，用于将设备信息传递到用户页面上
 // String domain = "http://192.168.3.16:7002/";
 // // 业务服务 ws 服务端口ip
 // String yw_ws_ip = "192.168.3.16";
@@ -263,7 +263,8 @@ void onError(String code, String at_pos, String message)
     if (message.indexOf("请充值") >= 0)
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face->SetChatMessage("额度卡不足，请充值。");
+        bttomText = "额度卡不足，请充值。";
+        bttomTextPrevLeft = 0;
 #endif
         play_builtin_audio(yu_e_bu_zu_mp3, yu_e_bu_zu_mp3_len);
         delay(5000);
@@ -305,7 +306,6 @@ void on_command(String command_id, String data)
     else if (command_id == "on_iat_cb")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        // face->SetChatMessage(data);
         bttomText = data;
         bttomTextPrevLeft = 0;
 #endif
@@ -313,7 +313,6 @@ void on_command(String command_id, String data)
     else if (command_id == "on_llm_cb")
     {
 #if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        // face->SetChatMessage(data);
         bttomText = data;
         bttomTextPrevLeft = 0;
 #endif
@@ -449,16 +448,6 @@ bool onBegin()
 
 void on_ready()
 {
-    String ext3 = esp_ai.getLocalData("ext3");
-    if (ext3 == "")
-    {
-        esp_ai.setLocalData("ext3", "1");
-        esp_ai.awaitPlayerDone();
-        esp_ai.stopSession();
-        esp_ai.tts("设备激活成功，现在可以和我聊天了哦。");
-        esp_ai.awaitPlayerDone();
-    }
-
     // 检测升级
     if (!ota_ed)
     {
@@ -469,6 +458,16 @@ void on_ready()
                     &bttomTextPrevLeft,
                     &topLeftText,
                     &prevTopLeftText);
+    }
+
+    String ext3 = esp_ai.getLocalData("ext3");
+    if (ext3 == "")
+    {
+        esp_ai.setLocalData("ext3", "1");
+        esp_ai.awaitPlayerDone();
+        esp_ai.stopSession();
+        esp_ai.tts("设备激活成功，现在可以和我聊天了哦。");
+        esp_ai.awaitPlayerDone();
     }
 }
 
@@ -742,12 +741,18 @@ String on_bind_device(JSONVar data)
 #endif
                 // 绑定设备失败
                 LOG_D("[Error] -> 绑定设备失败，错误信息：%s", message.c_str());
-                // esp_ai.tts("绑定设备失败，重启设备试试呢，本次错误原因：" + message);
                 on_bind_device_http.end();
 
-                play_builtin_audio(bind_err_mp3, bind_err_mp3_len);
+                if (message.indexOf("不可以重复绑定") != -1)
+                {
+                    play_builtin_audio(chong_fu_bang_ding_mp3, chong_fu_bang_ding_mp3_len);
+                }
+                else
+                {
+                    play_builtin_audio(bind_err_mp3, bind_err_mp3_len);
+                }
                 vTaskDelay(100 / portTICK_PERIOD_MS);
-                esp_ai.awaitPlayerDone();
+                esp_ai.awaitPlayerDone(); 
 
                 // 这个 json 数据中的 message 会在配网页面弹出
                 return "{\"success\":false,\"message\":\"绑定设备失败，错误原因：" + message + "\"}";

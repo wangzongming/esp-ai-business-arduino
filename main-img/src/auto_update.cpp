@@ -69,6 +69,8 @@ void auto_update(String device_id, String api_key, String bin_id, String is_offi
                         bttomTextPrevLeft = 0;
                         vTaskDelay(1000 / portTICK_PERIOD_MS);
                         esp_ai.tts("系统已经是最新版本啦！");
+                        vTaskDelay(1000 / portTICK_PERIOD_MS);
+                        wait_mp3_player_done();
                     }
                     else
                     {
