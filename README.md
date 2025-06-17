@@ -50,11 +50,22 @@ esp-ai-business-arduion/
 
 # 环境配置
 
+## Platformio + VsCode (推荐)
+1. 下载整个仓库。
+```bash
+git clone https://gitee.com/xm124/esp-ai-business-arduino
+```
+2. 解压`libraries2.zip`。
+3. 打开`VsCode` 安装 `Platformio` 插件。
+4. 点击底部上传或者打包按钮即可。
+
+详情文档见：[Platformio + VsCode](https://espai.fun/guide/client-dev/#_1-3%E3%80%81arduino-%E5%BC%80%E5%8F%91%E6%9D%BF%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85)
+
+## Arduino IDE
 1. 先看一遍文档： 
 [ Arduino IDE 文档](https://espai.fun/guide/client-dev/#%E4%B8%80%E3%80%81arduino-ide-%E7%8E%AF%E5%A2%83)
 
 2. 下载依赖库 `libraries2.zip`，然后解压到 `C:\Users\[用户名]\Documents\Arduino\libraries` (注意 用户名自己改成你电脑用户名，并且删除中括号。)
-
 
 **注意**
 如果你用 platformIO，需要注意自行将： `main\platformio.ini` 中的 `lib_dir` 改为 `../libraries2`
