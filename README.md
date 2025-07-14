@@ -21,6 +21,10 @@
 
 **总的来说：基于本仓库代码，可以实现各种业务需求。开发者可以删除不需要的功能，或者在固件中写好您的秘钥信息等各种灵活操作...**
 
+<div align="center">
+  <img src="https://esp-ai2.oss-cn-beijing.aliyuncs.com/readme/example.png" style="width:80%;border-radius: 20px;margin: 0 auto;" />
+</div>
+
 
 # 功能
 
@@ -34,7 +38,7 @@
 # 适配的主控
 
 1. [x] esp32s3  
-2. [] esp32c3（很快推出）
+2. [x] esp32c3 
  
 
 # 项目结构
