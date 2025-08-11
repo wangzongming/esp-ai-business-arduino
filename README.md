@@ -21,8 +21,23 @@
 
 **总的来说：基于本仓库代码，可以实现各种业务需求。开发者可以删除不需要的功能，或者在固件中写好您的秘钥信息等各种灵活操作...**
 
-<div align="center">
-  <img src="https://esp-ai2.oss-cn-beijing.aliyuncs.com/readme/example.png" style="width:80%;border-radius: 20px;margin: 0 auto;" />
+
+<div style="background: white; margin: 24px 0px; border-radius: 24px; overflow: hidden; display: flex;flex-wrap: wrap;">
+<div style="width: 50%; display:inline-block;">
+<img style="max-width: 100%'" src="https://esp-ai2.oss-cn-beijing.aliyuncs.com/icon/%E5%AE%98%E6%96%B9%E5%9B%BA%E4%BB%B6/TFT%E5%B1%8F%E5%B9%95" /></div>
+
+<div style="width: 50%; display:inline-block;">
+<img src="https://esp-ai2.oss-cn-beijing.aliyuncs.com/icon/%E5%AE%98%E6%96%B9%E5%9B%BA%E4%BB%B6/feng_main.gif" />
+</div>
+
+<div style="width: 50%; display:inline-block;">
+<img src="https://esp-ai2.oss-cn-beijing.aliyuncs.com/icon/%E5%AE%98%E6%96%B9%E5%9B%BA%E4%BB%B6/espai%E5%B8%A6%E5%B1%8F%E5%B9%95%E7%89%88%E6%9C%AC" />
+</div>
+
+<div style="width: 50%; display:inline-block;">
+<img src="https://esp-ai2.oss-cn-beijing.aliyuncs.com/icon/%E5%AE%98%E6%96%B9%E5%9B%BA%E4%BB%B6/%E5%A4%A7%E7%99%BD" />
+</div>
+
 </div>
 
 
