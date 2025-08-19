@@ -48,7 +48,12 @@
 
 1. [x] esp32s3  
 2. [x] esp32c3 
- 
+
+
+# 推荐的开发环境
+
+推荐使用 [ESP-AI-Studio](https://espai.fun/dev/ESP-AI-Studio/) 来在线开发和编译发布自己的固件。这样一切都将变得格外简单。
+
 
 # 项目结构
 
