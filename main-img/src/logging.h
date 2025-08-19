@@ -1,1 +1,0 @@
-#define LOG_D(fmt, ...)   printf_P(("[%s][%d]:" fmt "\r\n") , __func__, __LINE__, ##__VA_ARGS__)

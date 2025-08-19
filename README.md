@@ -56,10 +56,7 @@
 esp-ai-business-arduion/
 ├── main/
 │   ├── main.ino                    # 主程序-开放平台版本
-│   └── voice.hd                    # 天问代码（天问语音唤醒）
-├── main-img/             
-│   ├── main-img.ino                # 主程序-TFT图片版
-│   └── voice.hd                    # 天问代码（天问语音唤醒）
+│   └── voice.hd                    # 天问代码（天问语音唤醒） 
 ├── web/              
 │   ├── index.html                  # 配网页面
 │   └── index_xiao_zhi_2.html       # 配网页面（兼容小智硬件）
@@ -83,77 +80,10 @@ git clone https://gitee.com/xm124/esp-ai-business-arduino
 1. 先看一遍文档： 
 [ Arduino IDE 文档](https://espai.fun/guide/client-dev/#%E4%B8%80%E3%80%81arduino-ide-%E7%8E%AF%E5%A2%83)
 
-2. 下载依赖库 `libraries2.zip`，然后解压到 `C:\Users\[用户名]\Documents\Arduino\libraries` (注意 用户名自己改成你电脑用户名，并且删除中括号。)
+2. 下载依赖库 `libraries` 中所有依赖文件，然后解压到 `C:\Users\[用户名]\Documents\Arduino\libraries` (注意 用户名自己改成你电脑用户名，并且删除中括号。)
 
 **注意**
 如果你用 platformIO，需要注意自行将： `main\platformio.ini` 中的 `lib_dir` 改为 `../libraries2`
-
-
-# 彩屏图片更改
-
-打开代码文件 `main-img\main-img.ino` 修改下面代码即可：
-
-```c++
-// 定义一个情感与图片 URL 的映射数组
-EmotionImagePair emotionToImage[] = {
-  // 第一个图一定要放默认图片
-  // 不同的表情可以使用同一张图片
-  { "默认", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/default.jpg" },
-  { "快乐", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kuai-le.jpg" },
-  { "意外", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kuai-le.jpg" },
-  { "愤怒", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/shen-qi.jpg" },
-  { "恐惧", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kong-ju.jpg" },
-  { "敬畏", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/kong-ju.jpg" },
-  { "专注", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/si-kao.jpg" },
-  { "疑问", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/si-kao.jpg" },
-  { "伤心", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/ku-qi.jpg" },
-  { "懊恼", "http://esp-ai2.oss-cn-beijing.aliyuncs.com/tft_imgs/liuying/ku-qi.jpg" }
-};
-```
-
-**注意：**  
-1. 图片必须使用 `http`, 不要使用 `https`。
-2. 图片尺寸必须为 `240 * 240`像素
-3. 图片大小必须在 `10kb` 以内
- 
-
-
-# 1.54 寸 TFT 屏幕接线（8pin）-- main-img 目录中的接线
- 
-| ESP-AI(v1/v2/mini) | TFT |
-| --------------- | --- |
-| 3.3v            | vcc |
-| GND             | GND |
-| 1               | SCK |
-| 2               | SDA |
-| 48              | CS  |
-| 47              | DC  |
-| 45              | RST |
-| 13              | BL  |
-
- 
-# 1.54 寸 TFT 屏幕接线（8pin）-- main 目录中的接线
-
-见 https://espai.fun/guide/1e7b8i8e/
-
-
-# 1.3 寸 TFT 屏幕接线（7pin）
-
-需要自行打开 `libraries\TFT_eSPI\User_Setup.h` 将下面的两行代码注释。
-``` c++
-// #define TFT_RST   45  // Reset pin (could connect to NodeMCU RST, see next line)
-// #define TFT_BL    13  // LED back-light (only for ST7789 with backlight control pin)
-```
-
-| ESP-AI(v1/v2/mini) | TFT |
-| --------------- | --- |
-| 3.3v            | vcc |
-| GND             | GND |
-| 1               | SCK |
-| 2               | SDA |
-| 48              | CS  |
-| 47              | DC  | 
-
 
 
 # 固件打包
