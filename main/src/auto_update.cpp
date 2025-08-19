@@ -1,18 +1,28 @@
 
 #include "auto_update.h"
 
-void auto_update(String device_id, String api_key, String bin_id, String is_official, String domain, String version,
-                 ESP_AI &esp_ai, ESPOTAManager &otaManager) {}
 /**
  * 自动检测 OTA 升级函数
  */
-void auto_update(String device_id, String api_key, String bin_id, String is_official, String domain, String version, ESP_AI &esp_ai, ESPOTAManager &otaManager, Face &face)
+void auto_update(
+    const String &device_id,
+    const String &api_key,
+    const String &bin_id,
+    const String &is_official,
+    const String &domain,
+    const String &version,
+    void (*wait_mp3_player_done)(),
+    void (*playBuiltinAudio)(const unsigned char *data, size_t len),
+    void (*tts)(const String &text),
+    ESPOTAManager &otaManager,
+    void (*setChatMessage)(const String &text, const String &status))
 {
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-    face.SetChatMessage("系统检查升级中。");
-#endif
+
+    setChatMessage("系统检查升级中。", "start");
     wait_mp3_player_done();
-    play_builtin_audio(jian_ce_shen_ji_mp3, jian_ce_shen_ji_mp3_len);
+    playBuiltinAudio(jian_ce_shen_ji_mp3, jian_ce_shen_ji_mp3_len);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    wait_mp3_player_done();
 
     HTTPClient http;
     String url = domain;
@@ -36,7 +46,7 @@ void auto_update(String device_id, String api_key, String bin_id, String is_offi
         {
             LOG_D("[Error HTTP] OTA 自动升级失败: %s", url.c_str());
             wait_mp3_player_done();
-            play_builtin_audio(shen_ji_shi_bai_mp3, shen_ji_shi_bai_mp3_len);
+            playBuiltinAudio(shen_ji_shi_bai_mp3, shen_ji_shi_bai_mp3_len);
             wait_mp3_player_done();
         }
         else
@@ -48,37 +58,29 @@ void auto_update(String device_id, String api_key, String bin_id, String is_offi
                 if (success == false)
                 {
                     LOG_D("[Error HTTP] OTA 自动升级失败: %s", url.c_str());
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-                    face.SetChatMessage("系统检测升级失败：" + message);
-#endif
+                    setChatMessage("系统检测升级失败：" + message, "error");
                     wait_mp3_player_done();
-                    play_builtin_audio(shen_ji_shi_bai_mp3, shen_ji_shi_bai_mp3_len);
+                    playBuiltinAudio(shen_ji_shi_bai_mp3, shen_ji_shi_bai_mp3_len);
                     wait_mp3_player_done();
-                    esp_ai.tts("系统检测升级失败：" + message);
+                    tts("系统检测升级失败：" + message);
                 }
                 else
                 {
                     bool latest = (bool)parse_res["data"]["latest"];
                     String bin_url = (const char *)parse_res["data"]["bin_url"];
                     if (latest)
-                    {
+                    { 
                         wait_mp3_player_done();
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-                        face.SetChatMessage("已经是最新版本");
-#endif
-                        vTaskDelay(1000 / portTICK_PERIOD_MS);
-                        esp_ai.tts("系统已经是最新版本啦！");
-                        vTaskDelay(1000 / portTICK_PERIOD_MS);
-                        wait_mp3_player_done();
+                        tts("系统已经是最新版本啦！"); 
+                        setChatMessage("已经是最新版本", "end"); 
                     }
                     else
                     {
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-                        face.SetChatMessage("检测到最新系统版本，正在进行升级。");
-#endif
+                        setChatMessage("检测到最新系统版本，正在进行升级。", "end");
+
                         wait_mp3_player_done();
-                        play_builtin_audio(zheng_zai_sheng_ji_mp3, zheng_zai_sheng_ji_mp3_len);
-                        // test...
+                        playBuiltinAudio(zheng_zai_sheng_ji_mp3, zheng_zai_sheng_ji_mp3_len);
+
                         vTaskDelay(500 / portTICK_PERIOD_MS);
                         wait_mp3_player_done();
                         vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -90,12 +92,9 @@ void auto_update(String device_id, String api_key, String bin_id, String is_offi
             }
             else
             {
-
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-                face.SetChatMessage("系统检测升级失败：002");
-#endif
+                setChatMessage("系统检测升级失败：002", "error");
                 wait_mp3_player_done();
-                play_builtin_audio(shen_ji_shi_bai_mp3, shen_ji_shi_bai_mp3_len);
+                playBuiltinAudio(shen_ji_shi_bai_mp3, shen_ji_shi_bai_mp3_len);
                 wait_mp3_player_done();
                 LOG_D("[Error HTTP] OTA 自动升级失败: %s", message.c_str());
             }
@@ -103,9 +102,7 @@ void auto_update(String device_id, String api_key, String bin_id, String is_offi
     }
     else
     {
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        face.SetChatMessage("系统检测升级失败：001");
-#endif
+        setChatMessage("系统检测升级失败：001", "error");
         LOG_D("[Error HTTP] 系统检测升级失败: %s", url.c_str());
     }
     http.end();

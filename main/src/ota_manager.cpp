@@ -3,14 +3,32 @@
 // 初始化静态成员变量
 ESPOTAManager *ESPOTAManager::instance = nullptr;
 
-ESPOTAManager::ESPOTAManager(WebSocketsClient *webSocket, ESP_AI *esp_ai, Face *face)
-    : webSocket(webSocket), esp_ai(esp_ai), face(face), startUpdateTime(0),
+ESPOTAManager::ESPOTAManager(WebSocketsClient *webSocket, 
+                             void (*ShowNotification)(const char *data),
+                             void (*OnlyShowNotification)(bool only_show_notification),
+                             void (*onProgress)(int percent),
+                             void (*stopSessionCb)(), 
+                             void (*delAllTaskCb)(), 
+                             void (*awaitPlayerDoneCb)(), 
+                             void (*playBuiltinAudioCb)(const unsigned char *data, size_t len), 
+                             void (*ledAmiCb)())
+    : webSocket(webSocket),  
+      startUpdateTime(0),
       startUpdateEd(false), isUpdateProgress(false), prevSendProgressTime(0)
 {
     instance = this;
+    this->stopSession = stopSessionCb;
+    this->delAllTask = delAllTaskCb;
+    this->awaitPlayerDone = awaitPlayerDoneCb;
+    this->playBuiltinAudio = playBuiltinAudioCb;
+    this->ledAmi = ledAmiCb;
+
+    this->showNotification = ShowNotification;
+    this->onlyShowNotification = OnlyShowNotification;
+    this->onProgress = onProgress;
 }
 
-void ESPOTAManager::init(String deviceId)
+void ESPOTAManager::init(const String &deviceId)
 {
     this->deviceId = deviceId;
 
@@ -21,21 +39,19 @@ void ESPOTAManager::init(String deviceId)
     httpUpdate.onError(updateErrorCallback);
 }
 
-void ESPOTAManager::update(String url)
+void ESPOTAManager::update(const String &url)
 {
-    esp_ai->stopSession();
+    this->stopSession();
     vTaskDelay(500 / portTICK_PERIOD_MS);
     // 重置状态
     startUpdateEd = false;
     isUpdateProgress = false;
     willUpdate = true;
 
-    esp_ai->delAllTask();
-// 显示升级通知
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-    face->OnlyShowNotification(true);
-    face->ShowNotification("正在升级");
-#endif
+    this->delAllTask();
+ 
+    this->showNotification("正在升级");
+    this->onlyShowNotification(true);
 
     // 记录开始时间
     startUpdateTime = millis();
@@ -51,9 +67,9 @@ void ESPOTAManager::update(String url)
     {
     case HTTP_UPDATE_FAILED:
         LOG_D("[update] Update failed. Error code: %d", httpUpdate.getLastError());
-        wait_mp3_player_done();
-        play_builtin_audio(shen_ji_shi_bai_mp3, shen_ji_shi_bai_mp3_len);
-        wait_mp3_player_done();
+        this->awaitPlayerDone();
+        this->playBuiltinAudio(shen_ji_shi_bai_mp3, shen_ji_shi_bai_mp3_len);
+        this->awaitPlayerDone();
         break;
     case HTTP_UPDATE_NO_UPDATES:
         LOG_D("[update] Update no Update.");
@@ -116,9 +132,10 @@ void ESPOTAManager::updateProgressCallback(int cur, int total)
         instance->otaProgress = String(percentage, 2) + "%";
 
         String progress = instance->otaProgress.c_str();
-#if !defined(IS_ESP_AI_S3_NO_SCREEN)
-        instance->face->ShowNotification("升级进度： " + progress);
-#endif
+        // #if defined(ENABLE_OLED) || defined(ENABLE_TFT)
+        //         instance->face->ShowNotification("升级进度： " + progress);
+        // #endif
+        instance->onProgress(percentage);
 
         // 1.5秒钟发送一次进度
         if (millis() - instance->prevSendProgressTime > 1500)
@@ -133,14 +150,7 @@ void ESPOTAManager::updateProgressCallback(int cur, int total)
             data_ota["device_id"] = instance->deviceId;
             String sendData = JSON.stringify(data_ota);
             instance->webSocket->sendTXT(sendData);
-
-            // 控制LED显示
-            esp_ai_pixels.setPixelColor(0, esp_ai_pixels.Color(218, 164, 90));
-            if (100 != esp_ai_pixels.getBrightness())
-                esp_ai_pixels.setBrightness(100);
-            else
-                esp_ai_pixels.setBrightness(50);
-            esp_ai_pixels.show();
+            instance->ledAmi();
         }
     }
 }

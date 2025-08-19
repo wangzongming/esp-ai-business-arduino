@@ -1,56 +1,107 @@
-#include "Face.h"
 
-#include "src/logging.h"
-#include "src/ota_manager.h"
-#include "src/auto_update.h"
-
+#pragma once
+#include "USER_CONFIG.h"  
+#include "src/logging.h"  
 #include "src/audios/zh/bind_err.h"
 #include "src/audios/zh/chong_fu_bang_ding.h"
-#include "src/audios/zh/yu_e_bu_zu.h"
 
-/****************************宏定义区*****************************/
-
-// ================= S3 开发板选择 ====================
-// #define IS_ESP_AI_S3_BASIC     // ESP-AI S3 开发板（不带屏幕、不带电池检查，只有基础功能），这个固件需要同时打开 IS_ESP_AI_S3_NO_SCREEN
-// #define IS_ESP_AI_S3_NO_SCREEN // ESP-AI S3 开发板（不带屏幕），这个固件需要同时打开 IS_ESP_AI_S3_BASIC
-// #define IS_ESP_AI_S3_OLED // ESP-AI S3 开发板（OLED 屏）
-#define IS_ESP_AI_S3_DOUBLE_OLED // ESP-AI S3 开发板（双OLED 屏, 大白）
-// #define IS_XIAO_ZHI_S3_2 // 小智AI S3 二代长条屏开发板 
-// #define IS_ESP_AI_S3_TFT // ESP-AI S3 开发板（TFT 屏）
-// #define IS_AI_VOX_TFT  // AI_VOX S3 开发板（TFT 屏）
-// #define IS_WU_MING_TFT // 无名科技 S3 开发板（TFT 屏）
-// #define IS_MA_ZHUANG_TFT // 马壮壮 S3 开发板（TFT 屏）
-
-// ================= 蓝牙配网模式 ====================+
-#define BLE_MODEL
-// ====================================================
-
-#define EMOTION_LIGHT_PIN 46 // 情绪灯光控制引脚
-
-#if defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3)
-#if SCREEN_TYPE == 0
-#error "请在正确配置 SCREEN_TYPE 屏幕类型"
-#endif
-#elif defined(IS_ESP_AI_S3_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_MA_ZHUANG_TFT)
-#if SCREEN_TYPE == 1
-#error "请在正确配置 SCREEN_TYPE 屏幕类型"
-#endif
+// 是否启用EEUI, 默认由下面的代码自动控制
+#if defined(IS_ESP_AI_S3_TFT_EMO)
+#define ENABLE_EEUI
+#define SCREEN_ROTA 1 // TFT屏幕方向
+// 屏幕宽高
+#define SCREEN_WIDTH 240
+#define SCREEN_HEIGHT 240
+#define SCREEN_PAD_LEFT 8
+#define SCREEN_PAD_RIGHT 8
 #endif
 
-// 电池电压检测引脚
-#if defined(IS_MA_ZHUANG_TFT)
-#define BAT_PIN 8
+#if defined(IS_WU_MING_TFT_EMO)
+#define ENABLE_EEUI
+#define SCREEN_ROTA 1 // TFT屏幕方向
+// 屏幕宽高
+#define SCREEN_WIDTH 300 
+#define SCREEN_HEIGHT 240
+#define SCREEN_PAD_LEFT 30
+#define SCREEN_PAD_RIGHT 5 
+#endif
+
+
+// 是否启用4G模块
+#if defined(IS_ESP_AI_S3_TFT_EMO_4G)
+#define IS_ESP_AI_S3_TFT_EMO  // 这是实际的逻辑代码
+#define USE_4G_MODULE
+#endif
+
+// 是否开启电压检测（官方开发板都支持）, 默认由下面的代码自动控制 
+#if defined(IS_ESP_AI_S3_TFT) || defined(IS_ESP_AI_S3_TFT_EMO) || defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_BOWKNOT) || defined(IS_ESP_AI_C3)
+#define ENABLE_POWER
+#define SCREEN_ROTA 1 // TFT屏幕方向
+
+#if defined(IS_BOWKNOT)
+#define BAT_PIN 3
+#elif defined(IS_ESP_AI_C3)
+#define BAT_PIN 1
 #else
+// 电池电压检测引脚
 #define BAT_PIN 8
 #endif
+#endif
 
-// ================== 调试打印 ==========
-// #define LOG_D(fmt, ...)   printf_P(("[%s][%d]:" fmt "\r\n") , __func__, __LINE__, ##__VA_ARGS__)
+// 是否开启供电检测（官方开发板都支持）, 默认由下面的代码自动控制
+#if defined(IS_ESP_AI_S3_TFT) || defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_TFT_EMO) || defined(IS_BOWKNOT) || defined(IS_ESP_AI_C3)
+#define ENABLE_SUPPLY_DETECTION
+#if defined(IS_BOWKNOT)
+#define SUPPLY_DETECTION_PIN 0
+#elif defined(IS_ESP_AI_C3)
+#define SUPPLY_DETECTION_PIN 0
+#else
+#define SUPPLY_DETECTION_PIN 47
+#endif
+#endif
 
-// 音量按钮
+// 是否开启情绪灯光, 默认由下面的代码自动控制
+// #define ENABLE_EMO_LIGHT
+#if defined(IS_ESP_AI_S3_TFT) || defined(IS_ESP_AI_S3_TFT_EMO) || defined(IS_ESP_AI_S3_OLED) || defined(IS_BOWKNOT)
+#define ENABLE_EMO_LIGHT
+#if defined(IS_BOWKNOT) 
+#define EMOTION_LIGHT_PIN 20
+#define EMOTION_LIGHT_COUNT 6 // 灯珠数量
+#else
+#define EMOTION_LIGHT_PIN 46
+#define EMOTION_LIGHT_COUNT 150 // 灯珠数量
+#endif
+#endif
+
+// 是否开启TFT功能, 默认由下面的代码自动控制
+// #define ENABLE_TFT
+#if defined(IS_ESP_AI_S3_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_WU_MING_TFT) || defined(IS_ESP_AI_S3_TFT_EMO) || defined(IS_WU_MING_TFT_EMO)
+#if !defined(ENABLE_EEUI)
+#define ENABLE_TFT
+#endif
+#else
+#if defined(ENABLE_EEUI)
+#error "仅 TFT 屏幕支持使用 EEUI"
+#endif
+#endif
+
+// 是否开启OLED功能, 默认由下面的代码自动控制
+// #define ENABLE_OLED // 是否开启OLED功能
+#if defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_XIAO_ZHI_S3_2) || defined(IS_ESP_AI_C3)
+#define ENABLE_OLED
+#endif
+
+// 是否开启按钮加减音量, 一般是两个按钮，一个加音量，一个减音量（小智开发板和大白都需要开启）, 默认由下面的代码自动控制
+// #define ENABLE_POWER
+#if defined(IS_AI_VOX_TFT) || defined(IS_WU_MING_TFT) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_XIAO_ZHI_S3_2) || defined(IS_WU_MING_TFT_EMO)
+#define ENABLE_BTN_VOL
+// 音量按钮PIN选择
 #if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT)
 #define VOL_ADD_KEY 40
 #define VOL_SUB_KEY 39
+#elif defined(IS_WU_MING_TFT_EMO)
+#define VOL_ADD_KEY 39
+#define VOL_SUB_KEY 40
 #elif defined(IS_AI_VOX_TFT)
 #define VOL_ADD_KEY 40
 #define VOL_SUB_KEY 42
@@ -58,9 +109,11 @@
 #define VOL_ADD_KEY 40
 #define VOL_SUB_KEY 41
 #endif
+#endif
+
 // ===========================================================
 // [可 填] 自定义配网页面
-#if defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_ESP_AI_S3_TFT) || defined(IS_ESP_AI_S3_NO_SCREEN) || defined(IS_ESP_AI_S3_BASIC)
+#if defined(IS_ESP_AI_S3_OLED) || defined(IS_ESP_AI_S3_DOUBLE_OLED) || defined(IS_ESP_AI_S3_TFT) || defined(IS_ESP_AI_S3_BASIC) || defined(IS_ESP_AI_S3_TFT_EMO)
 const char html_str[] PROGMEM = R"rawliteral( 
 <!DOCTYPE html>
 <html lang='en'>
@@ -874,7 +927,7 @@ const char html_str[] PROGMEM = R"rawliteral(
 )rawliteral";
 #endif
 
-#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_MA_ZHUANG_TFT)
+#if defined(IS_XIAO_ZHI_S3_2) || defined(IS_XIAO_ZHI_S3_3) || defined(IS_WU_MING_TFT) || defined(IS_AI_VOX_TFT) || defined(IS_ESP_AI_C3) || defined(IS_BOWKNOT) || defined(IS_WU_MING_TFT_EMO)
 
 const char html_str[] PROGMEM = R"rawliteral( 
 <!DOCTYPE html>

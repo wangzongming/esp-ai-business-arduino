@@ -86,6 +86,12 @@ ls /dev/ttyUSB*
 pio run -t upload --upload-port /dev/ttyUSB0
 ```
 
+**如果设备被识别为其他 tty 设备（如 ttyACM0）**
+```sh 
+sudo ln -s /dev/ttyACM0 /dev/ttyUSB0
+```
+ 
+
 ### 6. 串口监听
 ```sh
 pio device monitor --baud 115200
